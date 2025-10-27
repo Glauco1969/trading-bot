@@ -13,7 +13,7 @@ def send_telegram_message(message: str):
     if not TOKEN or not CHAT_ID:
         print("⚠️ Telegram não configurado corretamente (.env faltando)")
         return
-    url = f"https://api.telegram.org/bot{@Traidbolt_bot}/sendMessage"
+    url = f"https://api.telegram.org/bot{Traidbolt}/sendMessage"
     payload = {"chat_id": CHAT_ID, "text": message}
     try:
         r = requests.post(url, data=payload, timeout=5)
