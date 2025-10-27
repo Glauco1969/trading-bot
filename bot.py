@@ -7,6 +7,8 @@ import pandas as pd
 
 from exchange_client import create_exchange
 from strategy import signal_from_ohlcv
+from telegram_alert import send_telegram_message
+
 
 load_dotenv()
 
