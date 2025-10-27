@@ -72,30 +72,5 @@ def main_loop():
 if __name__ == "__main__":
     main_loop()
 
-# estando no diretório do projeto e com venv ativado:
-tmux new -ds trading-bot "source ~/trading-bot-venv/bin/activate; python3 $(pwd)/bot.py |& tee logs/bot.log"
-
-# clonar (se quiser)
-git clone <seu-repo> trading-bot
-cd trading-bot
-
-# criar virtualenv
-python3 -m venv ~/trading-bot-venv
-source ~/trading-bot-venv/bin/activate
-pip install ccxt python-dotenv pandas numpy requests
-
-# preparar .env (editar)
-nano .env
-
-# iniciar bot em tmux (detached) e registrar logs
-tmux new -ds trading-bot "source ~/trading-bot-venv/bin/activate; python3 $(pwd)/bot.py |& tee logs/bot.log"
-
-# ver sessões
-tmux ls
-
-# anexar para checar
-tmux attach -t trading-bot
-# ou sair (detach) com Ctrl+b d
-
 
 
