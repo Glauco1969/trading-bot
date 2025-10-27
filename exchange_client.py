@@ -24,3 +24,12 @@ def create_exchange():
         ex.set_sandbox_mode(True)  # CCXT suporta sandbox para algumas exchanges.
     return ex
 
+git init
+git add .
+git commit -m "Versão funcional do robô Binance Testnet"
+git branch -M main
+git remote add origin https://github.com/SEU_USUARIO/trading-bot.git
+git push -u origin main
+
+tmux attach -t trading-bot
+
