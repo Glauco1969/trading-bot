@@ -56,3 +56,7 @@ if tmux has-session -t $SESSION_NAME 2>/dev/null; then
 else
     echo "❌ Falha ao iniciar o bot."
 fi
+
+chmod +x start.sh
+./start.sh
+
