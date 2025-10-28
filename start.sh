@@ -4,6 +4,14 @@
 # Autor: Glauco (projeto Traidbolt)
 # ======================================
 
+#!/bin/bash
+# Evita múltiplas instâncias
+if pgrep -f start.sh > /dev/null; then
+  echo "⚠️ Já existe uma instância rodando!"
+  exit 1
+fi
+
+
 SESSION_NAME="trading-bot"
 VENV_PATH="$HOME/trading-bot-venv"
 BOT_SCRIPT="$(pwd)/bot.py"
