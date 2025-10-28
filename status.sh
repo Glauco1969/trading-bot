@@ -12,3 +12,5 @@ if tmux has-session -t $SESSION_NAME 2>/dev/null; then
 else
     echo "❌ O bot não está em execução."
 fi
+chmod +x start.sh stop.sh status.sh
+
