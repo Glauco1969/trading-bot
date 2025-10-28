@@ -39,6 +39,6 @@ def buy_token_with_bnb(token_address, amount_bnb, slippage=0.01):
     tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
     return w3.toHex(tx_hash)
 
-upython config_loader.py
+python3 config_loader.py
 chmod 600 .env
 
