@@ -27,6 +27,20 @@ def signal_from_ohlcv(df):
         return "sell"
     return None
 
+upython config_loader.py
+chmod 600 .env
+
+
+git init
+git add .
+git commit -m "Versão funcional do robô Binance Testnet"
+git branch -M main
+git remote add origin https://github.com/SEU_USUARIO/trading-bot.git
+git push -u origin main
+
+tmux attach -t trading-bot
+
+
 
 # estando no diretório do projeto e com venv ativado:
 tmux new -ds trading-bot "source ~/trading-bot-venv/bin/activate; python3 $(pwd)/bot.py |& tee logs/bot.log"
