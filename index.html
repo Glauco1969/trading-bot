@@ -3,49 +3,36 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Traidbolt — Seu bot de trade automatizado na Solana</title>
+  <title>Traidbolt — Bot de Trade na Solana</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="responsivo.css" />
-  <script>
-    async function atualizarStatus() {
-      const statusEl = document.getElementById("status");
-      try {
-        const res = await fetch("http://201.23.161.243:5000/api/status");
-        const data = await res.json();
-        statusEl.textContent = data.running ? "🟢 Bot ativo" : "🔴 Bot pausado";
-      } catch (e) {
-        statusEl.textContent = "⚠️ Erro ao conectar ao painel";
-      }
+  <style>
+    /* Pequenas animações para status */
+    .status {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #00E5A8;
+      animation: pulse 1.5s infinite;
     }
-
-    async function controlarBot(acao) {
-      const btnIniciar = document.getElementById("btnIniciar");
-      const btnParar = document.getElementById("btnParar");
-
-      try {
-        const endpoint =
-          acao === "start"
-            ? "http://201.23.161.243:5000/api/start"
-            : "http://201.23.161.243:5000/api/stop";
-
-        const res = await fetch(endpoint, { method: "POST" });
-        const data = await res.json();
-
-        if (data.success) {
-          alert(acao === "start" ? "✅ Bot iniciado!" : "🛑 Bot pausado!");
-          atualizarStatus();
-        } else {
-          alert("Erro: " + data.message);
-        }
-      } catch (e) {
-        alert("⚠️ Erro ao comunicar com o painel.");
-      }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
     }
-
-    window.onload = atualizarStatus;
-  </script>
+    .btn {
+      display: inline-block;
+      margin: 5px;
+      padding: 12px 24px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+    .btn.primary { background-color: #00E5A8; color: #071829; }
+    .btn.primary:hover { background-color: #00c28a; }
+    .btn.telegram { background-color: #0088cc; color: white; }
+    .btn.telegram:hover { background-color: #006699; }
+  </style>
 </head>
-
 <body>
   <header class="cabecalho">
     <div class="logo">
@@ -68,12 +55,11 @@
       <p class="subtitle">Gerencie, reinvista e opere com inteligência em tempo real.</p>
 
       <div class="actions">
-        <button class="btn primary" id="btnIniciar" onclick="controlarBot('start')">▶️ Iniciar Bot</button>
-        <button class="btn outline" id="btnParar" onclick="controlarBot('stop')">⏸️ Parar Bot</button>
-        <a class="btn telegram" href="https://t.me/Traidboltbot" target="_blank" rel="noopener">💬 Telegram</a>
+        <a class="btn primary" href="http://201.23.161.243:5000" target="_blank" rel="noopener">🖥️ Abrir Painel Web</a>
+        <a class="btn telegram" href="https://t.me/Traidboltbot" target="_blank" rel="noopener">💬 Abrir Telegram</a>
       </div>
 
-      <p id="status" class="note">Carregando status...</p>
+      <p class="status">⚡ Painel online</p>
     </div>
 
     <div class="hero-visual" aria-hidden="true">
@@ -126,4 +112,5 @@
   </footer>
 </body>
 </html>
+
 
