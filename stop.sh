@@ -12,3 +12,4 @@ if tmux has-session -t $SESSION_NAME 2>/dev/null; then
 else
     echo "⚠️ Nenhuma sessão ativa encontrada."
 fi
+chmod +x stop.sh
