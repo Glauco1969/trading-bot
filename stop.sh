@@ -13,3 +13,4 @@ else
     echo "⚠️ Nenhuma sessão ativa encontrada."
 fi
 chmod +x stop.sh
+.stop.sh
