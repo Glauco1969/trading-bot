@@ -1,76 +1,80 @@
 # bot.py
 import time
-import os
-import logging
-from dotenv import load_dotenv
 import pandas as pd
-
-from exchange_client import create_exchange
+from exchange_client import get_client, get_ohlcv, place_order
 from strategy import signal_from_ohlcv
 from telegram_alert import send_telegram_message
-
+from dotenv import load_dotenv
+import os
 
 load_dotenv()
 
-LOGFILE = os.path.join("logs", "bot.log")
-os.makedirs("logs", exist_ok=True)
-logging.basicConfig(filename=LOGFILE, level=logging.INFO,
-                    format="%(asctime)s %(levelname)s %(message)s")
-logger = logging.getLogger()
-
-SYMBOL = os.getenv("SYMBOL", "BTC/USDT")
+SYMBOL = os.getenv("TRADE_SYMBOL", "BTC/USDT")
 TIMEFRAME = os.getenv("TIMEFRAME", "1m")
-ORDER_SIZE_USD = float(os.getenv("ORDER_SIZE_USD", "10"))
+STOP_LOSS_PCT = float(os.getenv("STOP_LOSS_PCT", 0.5))   # %
+TAKE_PROFIT_PCT = float(os.getenv("TAKE_PROFIT_PCT", 1.0))  # %
+TRADE_AMOUNT = float(os.getenv("TRADE_AMOUNT", 0.001))  # quantidade de BTC
 
-def fetch_ohlcv(exchange, symbol, timeframe, limit=100):
-    raw = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit)
-    df = pd.DataFrame(raw, columns=["timestamp","open","high","low","close","volume"])
-    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-    return df
+client = get_client()
 
-def place_market_order(exchange, symbol, side, usd_amount):
-    # converter usd -> amount de base asset com ticker price
-    ticker = exchange.fetch_ticker(symbol)
-    price = float(ticker['last'])
-    base_amount = float(usd_amount) / price
-    # ajustar precision
-    market = exchange.markets[symbol]
-    precision = market.get('precision', {}).get('amount', 8)
-    base_amount = exchange.amount_to_precision(symbol, base_amount)
-    logger.info(f"Placing {side} market order {symbol} qty={base_amount} (≈${usd_amount})")
-    try:
-        order = exchange.create_market_order(symbol, side, float(base_amount))
-        logger.info(f"Order executed: {order}")
-        return order
-    except Exception as e:
-        logger.exception("Order failed")
-        return None
+position = None
+entry_price = None
 
-def main_loop():
-    ex = create_exchange()
-    logger.info("Starting bot for %s" % SYMBOL)
-    position = None  # 'long' ou None
+def trade_loop():
+    global position, entry_price
+    send_telegram_message("🤖 Bot iniciado e monitorando o mercado...")
 
     while True:
         try:
-            df = fetch_ohlcv(ex, SYMBOL, TIMEFRAME, limit=200)
-            sig = signal_from_ohlcv(df)
-            logger.info(f"Signal: {sig}")
+            df = get_ohlcv(client, SYMBOL, TIMEFRAME, 100)
+            signal = signal_from_ohlcv(df)
 
-            if sig == "buy" and position != "long":
-                order = place_market_order(ex, SYMBOL, "buy", ORDER_SIZE_USD)
+            last_price = float(df['close'].iloc[-1])
+
+            # 🟢 Sinal de COMPRA
+            if signal == "buy" and position is None:
+                send_telegram_message(f"📈 Sinal de COMPRA detectado para {SYMBOL} a {last_price:.2f} USDT")
+                order = place_order(client, SYMBOL, 'buy', TRADE_AMOUNT)
                 if order:
                     position = "long"
-            elif sig == "sell" and position == "long":
-                order = place_market_order(ex, SYMBOL, "sell", ORDER_SIZE_USD)
+                    entry_price = last_price
+                    send_telegram_message(f"✅ Ordem de compra executada. Preço de entrada: {entry_price:.2f} USDT")
+
+            # 🔴 Sinal de VENDA
+            elif signal == "sell" and position == "long":
+                send_telegram_message(f"📉 Sinal de VENDA detectado para {SYMBOL} a {last_price:.2f} USDT")
+                order = place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
                 if order:
                     position = None
+                    entry_price = None
+                    send_telegram_message(f"✅ Ordem de venda executada em {last_price:.2f} USDT")
+
+            # 🎯 Stop-loss / Take-profit automáticos
+            if position == "long" and entry_price:
+                change_pct = ((last_price - entry_price) / entry_price) * 100
+
+                if change_pct <= -STOP_LOSS_PCT:
+                    send_telegram_message(f"❌ Stop-Loss atingido ({change_pct:.2f}%) — vendendo posição.")
+                    place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+                    position = None
+                    entry_price = None
+
+                elif change_pct >= TAKE_PROFIT_PCT:
+                    send_telegram_message(f"🏁 Take-Profit atingido ({change_pct:.2f}%) — realizando lucro.")
+                    place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+                    position = None
+                    entry_price = None
+
+            time.sleep(20)
+
         except Exception as e:
-            logger.exception("Erro no loop principal")
-        time.sleep(30)  # espera entre iterações (ajuste conforme timeframe)
-    
+            print("Erro no loop principal:", e)
+            send_telegram_message(f"⚠️ Erro no bot: {e}")
+            time.sleep(10)
+
+
 if __name__ == "__main__":
-    main_loop()
+    trade_loop()
 
 
 
