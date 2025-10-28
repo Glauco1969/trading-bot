@@ -46,12 +46,12 @@ fi
 echo "🚀 Iniciando trading bot em background..."
 tmux new -ds $SESSION_NAME "source $VENV_PATH/bin/activate && python3 $BOT_SCRIPT |& tee $LOG_DIR/bot.log"
 
-# Mostra status
 sleep 1
 if tmux has-session -t $SESSION_NAME 2>/dev/null; then
-    echo "✅ Bot iniciado com sucesso! Use os comandos abaixo:"
+    echo "✅ Bot iniciado com sucesso!"
     echo "   📜 Ver logs:      tmux attach -t $SESSION_NAME"
-    echo "   ❌ Parar bot:     tmux kill-session -t $SESSION_NAME"
+    echo "   ❌ Parar bot:     ./stop.sh"
+    echo "   📊 Status:        ./status.sh"
     echo "   ↩️  Sair do log:   Ctrl + B, depois D"
 else
     echo "❌ Falha ao iniciar o bot."
