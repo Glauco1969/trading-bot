@@ -1,8 +1,1 @@
-/* responsivo.css - adicionais */
-@media (max-width:600px){
-  .hero{padding:28px 6%}
-  .hero h1{font-size:22px}
-  .subtitle{font-size:14px}
-  .btn{padding:10px 12px;font-size:14px}
-  .logo svg{width:34px;height:34px}
-}
+@media (max-width:600px){.hero{padding:28px 6%}.hero h1{font-size:22px}.btn{padding:10px 12px;font-size:14px}}
