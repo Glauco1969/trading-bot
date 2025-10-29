@@ -80,5 +80,3 @@ if tmux has-session -t $PAINEL_SESSION 2>/dev/null && tmux has-session -t $BOT_S
 else
     echo "❌ Falha ao iniciar algum processo."
 fi
-
-chmod +x start_all.sh
