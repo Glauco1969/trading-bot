@@ -3,114 +3,182 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Traidbolt — Bot de Trade na Solana</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="responsivo.css" />
+  <title>Traidbolt — Bot de Trade Automatizado na Solana</title>
+  <link rel="icon" href="static/icon.png" />
   <style>
-    /* Pequenas animações para status */
-    .status {
-      margin-top: 10px;
+    body {
+      font-family: "Inter", sans-serif;
+      background-color: #0d1117;
+      color: #e6edf3;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      background-color: #0c0f14;
+      border-bottom: 1px solid #1f2937;
+    }
+
+    header a {
+      color: #10b981;
       font-weight: bold;
-      color: #00E5A8;
-      animation: pulse 1.5s infinite;
+      text-decoration: none;
+      font-size: 1.3rem;
     }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.6; }
+
+    nav a {
+      color: #9ca3af;
+      margin-left: 1.2rem;
+      text-decoration: none;
     }
+
+    nav a:hover {
+      color: #10b981;
+    }
+
+    main {
+      text-align: center;
+      padding: 4rem 2rem;
+    }
+
+    h1 {
+      color: #10b981;
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    p {
+      color: #9ca3af;
+      font-size: 1.1rem;
+      margin-bottom: 2rem;
+    }
+
     .btn {
       display: inline-block;
-      margin: 5px;
-      padding: 12px 24px;
-      border-radius: 6px;
+      padding: 0.8rem 1.8rem;
+      border-radius: 12px;
+      font-weight: 600;
+      margin: 0.5rem;
       text-decoration: none;
-      font-weight: bold;
       transition: 0.3s;
+      box-shadow: 0 0 10px #000;
     }
-    .btn.primary { background-color: #00E5A8; color: #071829; }
-    .btn.primary:hover { background-color: #00c28a; }
-    .btn.telegram { background-color: #0088cc; color: white; }
-    .btn.telegram:hover { background-color: #006699; }
+
+    .btn-web {
+      background-color: #10b981;
+      color: #000;
+    }
+
+    .btn-web:hover {
+      background-color: #34d399;
+      transform: scale(1.05);
+      box-shadow: 0 0 15px #10b981;
+    }
+
+    .btn-telegram {
+      background-color: #0284c7;
+      color: #fff;
+    }
+
+    .btn-telegram:hover {
+      background-color: #0ea5e9;
+      transform: scale(1.05);
+      box-shadow: 0 0 15px #0ea5e9;
+    }
+
+    .status {
+      font-size: 1.1rem;
+      margin-top: 1rem;
+      color: #10b981;
+    }
+
+    .card {
+      margin: 2rem auto;
+      max-width: 400px;
+      background: #111827;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+      text-align: left;
+    }
+
+    .card h3 {
+      color: #10b981;
+      margin-bottom: 0.8rem;
+    }
+
+    .card p {
+      margin: 0.5rem 0;
+      color: #d1d5db;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1rem;
+      color: #6b7280;
+      font-size: 0.9rem;
+      border-top: 1px solid #1f2937;
+    }
   </style>
 </head>
 <body>
-  <header class="cabecalho">
-    <div class="logo">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-        <rect x="1" y="1" width="22" height="22" rx="4" fill="#071829"/>
-        <path d="M4 15 L10 9 L14 13 L20 7" stroke="#00E5A8" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span class="brand">Traidbolt</span>
-    </div>
-    <nav class="menu">
-      <a class="menu-item" href="#features">Recursos</a>
-      <a class="menu-item" href="#how">Como funciona</a>
-      <a class="menu-item cta" href="#painel">Painel</a>
+
+  <header>
+    <a href="#">Traidbolt</a>
+    <nav>
+      <a href="#recursos">Recursos</a>
+      <a href="#funciona">Como funciona</a>
+      <a href="#painel">Painel</a>
     </nav>
   </header>
 
-  <main class="hero" id="painel">
-    <div class="hero-content">
-      <h1>Traidbolt — Seu bot de trade automatizado na Solana</h1>
-      <p class="subtitle">Gerencie, reinvista e opere com inteligência em tempo real.</p>
+  <main>
+    <h1>Traidbolt — Seu bot de trade automatizado na Solana</h1>
+    <p>Gerencie, reinvista e opere com inteligência em tempo real.</p>
 
-      <div class="actions">
-        <a class="btn primary" href="http://201.23.161.243:5000" target="_blank" rel="noopener">🖥️ Abrir Painel Web</a>
-        <a class="btn telegram" href="https://t.me/Traidboltbot" target="_blank" rel="noopener">💬 Abrir Telegram</a>
-      </div>
+    <a href="http://127.0.0.1:5000" class="btn btn-web">💻 Abrir Painel Web</a>
+    <a href="https://t.me/Traidboltbot" class="btn btn-telegram">💬 Abrir Telegram</a>
 
-      <p class="status">⚡ Painel online</p>
-    </div>
+    <div class="status" id="status">⚡ Verificando status do painel...</div>
 
-    <div class="hero-visual" aria-hidden="true">
-      <svg viewBox="0 0 600 400" preserveAspectRatio="xMidYMid meet" class="dash-svg">
-        <rect x="0" y="0" width="600" height="400" rx="10" fill="#071829"/>
-        <rect x="24" y="28" width="200" height="30" rx="6" fill="#0b2733"/>
-        <rect x="24" y="70" width="520" height="30" rx="6" fill="#052126"/>
-        <rect x="24" y="120" width="520" height="220" rx="6" fill="#061922"/>
-        <rect x="40" y="140" width="200" height="20" rx="4" fill="#03363a"/>
-        <rect x="40" y="170" width="480" height="16" rx="4" fill="#002f2f"/>
-        <rect x="40" y="200" width="440" height="16" rx="4" fill="#002f2f"/>
-      </svg>
+    <div class="card" id="info-card" style="display:none;">
+      <h3>📊 Dados do Painel</h3>
+      <p><strong>Saldo atual:</strong> <span id="saldo">0 SOL</span></p>
+      <p><strong>Lucro total:</strong> <span id="lucro">0%</span></p>
     </div>
   </main>
 
-  <section id="features" class="features">
-    <h2>Recursos</h2>
-    <div class="grid">
-      <div class="card">
-        <h3>Auto Trade</h3>
-        <p>Busque e opere pares na Solana via Jupiter automaticamente.</p>
-      </div>
-      <div class="card">
-        <h3>Stop-loss & Reinvest</h3>
-        <p>Proteja seu capital e reinvista lucros de forma automática.</p>
-      </div>
-      <div class="card">
-        <h3>Notificações Telegram</h3>
-        <p>Receba alertas instantâneos de swaps, stop-loss e lucros.</p>
-      </div>
-    </div>
-  </section>
-
-  <section id="how" class="how">
-    <h2>Como funciona</h2>
-    <ol>
-      <li>Conecte sua carteira Phantom (seed segura via .env).</li>
-      <li>Configure pares, stop-loss e reinvestimento no painel.</li>
-      <li>Monitore tudo pelo painel e receba alertas no Telegram.</li>
-    </ol>
-  </section>
-
-  <footer class="rodape">
-    <div><strong>Traidbolt</strong> · Bot automatizado Solana</div>
-    <div class="foot-links">
-      <a href="http://201.23.161.243:5000" target="_blank" rel="noopener">Painel Web</a>
-      <a href="https://t.me/Traidboltbot" target="_blank" rel="noopener">Suporte Telegram</a>
-    </div>
-    <p class="copyright">© Traidbolt</p>
+  <footer>
+    © 2025 Traidbolt — Todos os direitos reservados.
   </footer>
+
+  <script>
+    async function atualizarStatus() {
+      try {
+        const resp = await fetch("http://127.0.0.1:5000/status"); // Endpoint Flask
+        const data = await resp.json();
+
+        document.getElementById("status").innerHTML = 
+          data.online ? "⚡ <b style='color:#10b981;'>Painel online</b>" : 
+                        "🟥 <b style='color:#ef4444;'>Painel offline</b>";
+
+        document.getElementById("saldo").innerText = data.saldo + " SOL";
+        document.getElementById("lucro").innerText = data.lucro + "%";
+
+        document.getElementById("info-card").style.display = "block";
+      } catch (e) {
+        document.getElementById("status").innerHTML = "🟥 <b style='color:#ef4444;'>Painel offline</b>";
+        document.getElementById("info-card").style.display = "none";
+      }
+    }
+
+    setInterval(atualizarStatus, 10000);
+    atualizarStatus();
+  </script>
+
 </body>
 </html>
-
-
