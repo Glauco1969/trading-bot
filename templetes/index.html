@@ -1,69 +1,184 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Traidbolt — Landing Page</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/responsivo.css') }}">
-<style>
-.fade-in{
-  opacity:0;
-  transform: translateY(20px);
-  animation: fadeIn 1s forwards;
-}
-@keyframes fadeIn{
-  to {opacity:1; transform: translateY(0);}
-}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Traidbolt — Bot de Trade Automatizado na Solana</title>
+  <link rel="icon" href="static/icon.png" />
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+      background-color: #0d1117;
+      color: #e6edf3;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      background-color: #0c0f14;
+      border-bottom: 1px solid #1f2937;
+    }
+
+    header a {
+      color: #10b981;
+      font-weight: bold;
+      text-decoration: none;
+      font-size: 1.3rem;
+    }
+
+    nav a {
+      color: #9ca3af;
+      margin-left: 1.2rem;
+      text-decoration: none;
+    }
+
+    nav a:hover {
+      color: #10b981;
+    }
+
+    main {
+      text-align: center;
+      padding: 4rem 2rem;
+    }
+
+    h1 {
+      color: #10b981;
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    p {
+      color: #9ca3af;
+      font-size: 1.1rem;
+      margin-bottom: 2rem;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 0.8rem 1.8rem;
+      border-radius: 12px;
+      font-weight: 600;
+      margin: 0.5rem;
+      text-decoration: none;
+      transition: 0.3s;
+      box-shadow: 0 0 10px #000;
+    }
+
+    .btn-web {
+      background-color: #10b981;
+      color: #000;
+    }
+
+    .btn-web:hover {
+      background-color: #34d399;
+      transform: scale(1.05);
+      box-shadow: 0 0 15px #10b981;
+    }
+
+    .btn-telegram {
+      background-color: #0284c7;
+      color: #fff;
+    }
+
+    .btn-telegram:hover {
+      background-color: #0ea5e9;
+      transform: scale(1.05);
+      box-shadow: 0 0 15px #0ea5e9;
+    }
+
+    .status {
+      font-size: 1.1rem;
+      margin-top: 1rem;
+      color: #10b981;
+    }
+
+    .card {
+      margin: 2rem auto;
+      max-width: 400px;
+      background: #111827;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+      text-align: left;
+    }
+
+    .card h3 {
+      color: #10b981;
+      margin-bottom: 0.8rem;
+    }
+
+    .card p {
+      margin: 0.5rem 0;
+      color: #d1d5db;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1rem;
+      color: #6b7280;
+      font-size: 0.9rem;
+      border-top: 1px solid #1f2937;
+    }
+  </style>
 </head>
 <body>
-<header class="cabecalho fade-in">
-  <div class="logo">Traidbolt</div>
-  <nav class="menu">
-    <a class="menu-item" href="#features">Recursos</a>
-    <a class="menu-item" href="#how">Como funciona</a>
-    <a class="menu-item cta" href="#cta">Acessar Painel</a>
-  </nav>
-</header>
 
-<main class="hero fade-in" id="cta">
-  <div class="hero-content">
-    <h1>Traidbolt — Bot de trade automatizado na Solana</h1>
-    <p class="subtitle">Gerencie, reinvista e opere com inteligência no painel em tempo real.</p>
-    <div class="actions">
-      <a class="btn primary" href="/painel">Acessar Painel Web</a>
-      <a class="btn outline" href="https://t.me/Traidboltbot" target="_blank">Abrir no Telegram</a>
+  <header>
+    <a href="#">Traidbolt</a>
+    <nav>
+      <a href="#recursos">Recursos</a>
+      <a href="#funciona">Como funciona</a>
+      <a href="#painel">Painel</a>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Traidbolt — Seu bot de trade automatizado na Solana</h1>
+    <p>Gerencie, reinvista e opere com inteligência em tempo real.</p>
+
+    <a href="http://127.0.0.1:5000" class="btn btn-web">💻 Abrir Painel Web</a>
+    <a href="https://t.me/Traidboltbot" class="btn btn-telegram">💬 Abrir Telegram</a>
+
+    <div class="status" id="status">⚡ Verificando status do painel...</div>
+
+    <div class="card" id="info-card" style="display:none;">
+      <h3>📊 Dados do Painel</h3>
+      <p><strong>Saldo atual:</strong> <span id="saldo">0 SOL</span></p>
+      <p><strong>Lucro total:</strong> <span id="lucro">0%</span></p>
     </div>
-    <p class="note">Compatível com Termux · Painel Web · Monitoramento em tempo real</p>
-  </div>
-</main>
+  </main>
 
-<section id="features" class="features fade-in">
-<h2>Recursos</h2>
-<div class="grid">
-  <div class="card"><h3>Auto Trade</h3><p>Configure regras automáticas para buscar e operar pares na Solana via Jupiter.</p></div>
-  <div class="card"><h3>Stop-loss & Reinvest</h3><p>Defina stop-loss, reinvista lucros automaticamente e proteja seu capital.</p></div>
-  <div class="card"><h3>Notificações</h3><p>Receba alertas no Telegram quando ações importantes acontecerem.</p></div>
-</div>
-</section>
+  <footer>
+    © 2025 Traidbolt — Todos os direitos reservados.
+  </footer>
 
-<section id="how" class="how fade-in">
-<h2>Como funciona</h2>
-<ol>
-<li>Conecte sua carteira Phantom (seed via .env seguro).</li>
-<li>Configure pares, valores e regras no painel.</li>
-<li>Monitore o histórico e realize reinvestimentos automáticos.</li>
-</ol>
-</section>
+  <script>
+    async function atualizarStatus() {
+      try {
+        const resp = await fetch("http://127.0.0.1:5000/status"); // Endpoint Flask
+        const data = await resp.json();
 
-<footer class="rodape fade-in">
-<div><strong>Traidbolt</strong> · Painel Web · Automatização de trades</div>
-<div class="foot-links">
-  <a href="/painel">Acessar Painel</a>
-  <a href="https://t.me/Traidboltbot" target="_blank">Suporte no Telegram</a>
-</div>
-<p class="copyright">© Traidbolt</p>
-</footer>
+        document.getElementById("status").innerHTML = 
+          data.online ? "⚡ <b style='color:#10b981;'>Painel online</b>" : 
+                        "🟥 <b style='color:#ef4444;'>Painel offline</b>";
+
+        document.getElementById("saldo").innerText = data.saldo + " SOL";
+        document.getElementById("lucro").innerText = data.lucro + "%";
+
+        document.getElementById("info-card").style.display = "block";
+      } catch (e) {
+        document.getElementById("status").innerHTML = "🟥 <b style='color:#ef4444;'>Painel offline</b>";
+        document.getElementById("info-card").style.display = "none";
+      }
+    }
+
+    setInterval(atualizarStatus, 10000);
+    atualizarStatus();
+  </script>
+
 </body>
 </html>
