@@ -1,39 +1,30 @@
-# bot.py
-import time
-import pandas as pd
-from exchange_client import get_client, get_ohlcv, place_order
-from strategy import signal_from_ohlcv
-from telegram_alert import send_telegram_message
-from dotenv import load_dotenv
 import os
+import requests
+from dotenv import load_dotenv
 
 load_dotenv()
 
-SYMBOL = os.getenv("TRADE_SYMBOL", "BTC/USDT")
-TIMEFRAME = os.getenv("TIMEFRAME", "1m")
-STOP_LOSS_PCT = float(os.getenv("STOP_LOSS_PCT", 0.5))   # %
-TAKE_PROFIT_PCT = float(os.getenv("TAKE_PROFIT_PCT", 1.0))  # %
-TRADE_AMOUNT = float(os.getenv("TRADE_AMOUNT", 0.001))  # quantidade de BTC
+TOKEN = os.getenv("TELEGRAM_TOKEN")
+CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-client = get_client()
+def send_telegram_alert(message, parse_mode="Markdown"):
+    if not TOKEN or not CHAT_ID:
+        print("⚠️ Telegram não configurado corretamente.")
+        return False
 
-position = None
-entry_price = None
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    payload = {"chat_id": CHAT_ID, "text": message, "parse_mode": parse_mode}
 
-def trade_loop():
-    global position, entry_price
-    send_telegram_message("🤖 Bot iniciado e monitorando o mercado...")
-
-    while True:
-        try:
-            df = get_ohlcv(client, SYMBOL, TIMEFRAME, 100)
-            signal = signal_from_ohlcv(df)
-
-            last_price = float(df['close'].iloc[-1])
-
-            # 🟢 Sinal de COMPRA
-            if signal == "buy" and position is None:
-                send_telegram_message(f"📈 Sinal de COMPRA detectado para {SYMBOL} a {last_price:.2f} USDT")
+    try:
+        resp = requests.post(url, json=payload, timeout=10)
+        if resp.status_code == 200:
+            print(f"📩 Alerta enviado: {message}")
+            return True
+        else:
+            print(f"❌ Erro Telegram ({resp.status_code}): {resp.text}")
+    except Exception as e:
+        print(f"🚨 Falha ao enviar alerta: {e}")
+    return False
                 order = place_order(client, SYMBOL, 'buy', TRADE_AMOUNT)
                 if order:
                     position = "long"
