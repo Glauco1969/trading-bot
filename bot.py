@@ -1,71 +1,1046 @@
 import os
-import requests
+import time
+import pandas as pd
 from dotenv import load_dotenv
+from datetime import datetime
+
+from exchange_client import get_client, get_ohlcv, place_order
+from strategy import signal_from_ohlcv
+from telegram_alert import alert_info, alert_trade, alert_error, alert_stoploss
+
+# ============================================================
+
+# 🤖 TRAIDBOLT — Bot de Trade Automático
+
+# Autor: Glauco (Traidbolt)
+
+# Última atualização: 06/11/2025
+
+# ============================================================
 
 load_dotenv()
 
-TOKEN = os.getenv("TELEGRAM_TOKEN")
-CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+SYMBOL = os.getenv("TRADE_SYMBOL", "BTC/USDT")
+TIMEFRAME = os.getenv("TIMEFRAME", "1m")
+STOP_LOSS_PCT = float(os.getenv("STOP_LOSS_PCT", 0.5))    # %
+TAKE_PROFIT_PCT = float(os.getenv("TAKE_PROFIT_PCT", 1.0)) # %
+TRADE_AMOUNT = float(os.getenv("TRADE_AMOUNT", 0.001))     # quantidade
+SLEEP_TIME = int(os.getenv("SLEEP_TIME", 20))              # intervalo de loop (s)
 
-def send_telegram_alert(message, parse_mode="Markdown"):
-    if not TOKEN or not CHAT_ID:
-        print("⚠️ Telegram não configurado corretamente.")
-        return False
+LOG_FILE = "logs/bot.log"
+os.makedirs("logs", exist_ok=True)
 
-    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    payload = {"chat_id": CHAT_ID, "text": message, "parse_mode": parse_mode}
+client = get_client()
+position = None
+entry_price = None
 
+# ======================= FUNÇÕES AUXILIARES ==========================
+
+def log_event(msg):
+"""Grava log local e exibe com timestamp"""
+timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+text = f"[{timestamp}] {msg}"
+print(text)
+with open(LOG_FILE, "a", encoding="utf-8") as f:
+f.write(text + "\n")
+
+# ======================= LOOP PRINCIPAL ==============================
+
+def trade_loop():
+global position, entry_price
+alert_info("🤖 Traidbolt iniciado e monitorando o mercado...")
+log_event("Bot iniciado.")
+
+```
+while True:
     try:
-        resp = requests.post(url, json=payload, timeout=10)
-        if resp.status_code == 200:
-            print(f"📩 Alerta enviado: {message}")
-            return True
-        else:
-            print(f"❌ Erro Telegram ({resp.status_code}): {resp.text}")
+        df = get_ohlcv(client, SYMBOL, TIMEFRAME, 100)
+        signal = signal_from_ohlcv(df)
+        last_price = float(df['close'].iloc[-1])
+
+        # 🟢 Sinal de COMPRA
+        if signal == "buy" and position is None:
+            log_event(f"Sinal de COMPRA detectado para {SYMBOL} a {last_price:.2f} USDT")
+            alert_info(f"📈 *Sinal de COMPRA* detectado para `{SYMBOL}` a `{last_price:.2f}` USDT")
+            
+            order = place_order(client, SYMBOL, 'buy', TRADE_AMOUNT)
+            if order:
+                position = "long"
+                entry_price = last_price
+                alert_trade(SYMBOL, "compra", TRADE_AMOUNT)
+                log_event(f"Ordem de compra executada. Preço de entrada: {entry_price:.2f} USDT")
+
+        # 🔴 Sinal de VENDA
+        elif signal == "sell" and position == "long":
+            log_event(f"Sinal de VENDA detectado para {SYMBOL} a {last_price:.2f} USDT")
+            alert_info(f"📉 *Sinal de VENDA* detectado para `{SYMBOL}` a `{last_price:.2f}` USDT")
+            
+            order = place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+            if order:
+                position = None
+                alert_trade(SYMBOL, "venda", TRADE_AMOUNT)
+                log_event(f"Ordem de venda executada em {last_price:.2f} USDT")
+
+        # 🎯 Stop-loss / Take-profit automáticos
+        if position == "long" and entry_price:
+            change_pct = ((last_price - entry_price) / entry_price) * 100
+
+            # STOP LOSS
+            if change_pct <= -STOP_LOSS_PCT:
+                msg = f"❌ Stop-Loss atingido ({change_pct:.2f}%) — vendendo posição."
+                alert_stoploss(SYMBOL, last_price)
+                log_event(msg)
+                place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+                position = None
+                entry_price = None
+
+            # TAKE PROFIT
+            elif change_pct >= TAKE_PROFIT_PCT:
+                msg = f"🏁 Take-Profit atingido ({change_pct:.2f}%) — realizando lucro."
+                alert_trade(SYMBOL, "take-profit", profit=change_pct)
+                log_event(msg)
+                place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+                position = None
+                entry_price = None
+
+        time.sleep(SLEEP_TIME)
+
     except Exception as e:
-        print(f"🚨 Falha ao enviar alerta: {e}")
-    return False
-                order = place_order(client, SYMBOL, 'buy', TRADE_AMOUNT)
-                if order:
-                    position = "long"
-                    entry_price = last_price
-                    send_telegram_message(f"✅ Ordem de compra executada. Preço de entrada: {entry_price:.2f} USDT")
+        error_text = f"⚠️ Erro no loop principal: {e}"
+        log_event(error_text)
+        alert_error(error_text)
+        time.sleep(10)
+```
 
-            # 🔴 Sinal de VENDA
-            elif signal == "sell" and position == "long":
-                send_telegram_message(f"📉 Sinal de VENDA detectado para {SYMBOL} a {last_price:.2f} USDT")
-                order = place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
-                if order:
-                    position = None
-                    entry_price = None
-                    send_telegram_message(f"✅ Ordem de venda executada em {last_price:.2f} USDT")
+if **name** == "**main**":
+trade_loop()
+import os
+import time
+import pandas as pd
+from dotenv import load_dotenv
+from datetime import datetime
 
-            # 🎯 Stop-loss / Take-profit automáticos
-            if position == "long" and entry_price:
-                change_pct = ((last_price - entry_price) / entry_price) * 100
+from exchange_client import get_client, get_ohlcv, place_order
+from strategy import signal_from_ohlcv
+from telegram_alert import alert_info, alert_trade, alert_error, alert_stoploss
 
-                if change_pct <= -STOP_LOSS_PCT:
-                    send_telegram_message(f"❌ Stop-Loss atingido ({change_pct:.2f}%) — vendendo posição.")
-                    place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
-                    position = None
-                    entry_price = None
+# ============================================================
 
-                elif change_pct >= TAKE_PROFIT_PCT:
-                    send_telegram_message(f"🏁 Take-Profit atingido ({change_pct:.2f}%) — realizando lucro.")
-                    place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
-                    position = None
-                    entry_price = None
+# 🤖 TRAIDBOLT — Bot de Trade Automático
 
-            time.sleep(20)
+# Autor: Glauco (Traidbolt)
 
-        except Exception as e:
-            print("Erro no loop principal:", e)
-            send_telegram_message(f"⚠️ Erro no bot: {e}")
-            time.sleep(10)
+# Última atualização: 06/11/2025
 
+# ============================================================
 
-if __name__ == "__main__":
-    trade_loop()
+load_dotenv()
 
+SYMBOL = os.getenv("TRADE_SYMBOL", "BTC/USDT")
+TIMEFRAME = os.getenv("TIMEFRAME", "1m")
+STOP_LOSS_PCT = float(os.getenv("STOP_LOSS_PCT", 0.5))    # %
+TAKE_PROFIT_PCT = float(os.getenv("TAKE_PROFIT_PCT", 1.0)) # %
+TRADE_AMOUNT = float(os.getenv("TRADE_AMOUNT", 0.001))     # quantidade
+SLEEP_TIME = int(os.getenv("SLEEP_TIME", 20))              # intervalo de loop (s)
+
+LOG_FILE = "logs/bot.log"
+os.makedirs("logs", exist_ok=True)
+
+client = get_client()
+position = None
+entry_price = None
+
+# ======================= FUNÇÕES AUXILIARES ==========================
+
+def log_event(msg):
+"""Grava log local e exibe com timestamp"""
+timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+text = f"[{timestamp}] {msg}"
+print(text)
+with open(LOG_FILE, "a", encoding="utf-8") as f:
+f.write(text + "\n")
+
+# ======================= LOOP PRINCIPAL ==============================
+
+def trade_loop():
+global position, entry_price
+alert_info("🤖 Traidbolt iniciado e monitorando o mercado...")
+log_event("Bot iniciado.")
+
+```
+while True:
+    try:
+        df = get_ohlcv(client, SYMBOL, TIMEFRAME, 100)
+        signal = signal_from_ohlcv(df)
+        last_price = float(df['close'].iloc[-1])
+
+        # 🟢 Sinal de COMPRA
+        if signal == "buy" and position is None:
+            log_event(f"Sinal de COMPRA detectado para {SYMBOL} a {last_price:.2f} USDT")
+            alert_info(f"📈 *Sinal de COMPRA* detectado para `{SYMBOL}` a `{last_price:.2f}` USDT")
+            
+            order = place_order(client, SYMBOL, 'buy', TRADE_AMOUNT)
+            if order:
+                position = "long"
+                entry_price = last_price
+                alert_trade(SYMBOL, "compra", TRADE_AMOUNT)
+                log_event(f"Ordem de compra executada. Preço de entrada: {entry_price:.2f} USDT")
+
+        # 🔴 Sinal de VENDA
+        elif signal == "sell" and position == "long":
+            log_event(f"Sinal de VENDA detectado para {SYMBOL} a {last_price:.2f} USDT")
+            alert_info(f"📉 *Sinal de VENDA* detectado para `{SYMBOL}` a `{last_price:.2f}` USDT")
+            
+            order = place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+            if order:
+                position = None
+                alert_trade(SYMBOL, "venda", TRADE_AMOUNT)
+                log_event(f"Ordem de venda executada em {last_price:.2f} USDT")
+
+        # 🎯 Stop-loss / Take-profit automáticos
+        if position == "long" and entry_price:
+            change_pct = ((last_price - entry_price) / entry_price) * 100
+
+            # STOP LOSS
+            if change_pct <= -STOP_LOSS_PCT:
+                msg = f"❌ Stop-Loss atingido ({change_pct:.2f}%) — vendendo posição."
+                alert_stoploss(SYMBOL, last_price)
+                log_event(msg)
+                place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+                position = None
+                entry_price = None
+
+            # TAKE PROFIT
+            elif change_pct >= TAKE_PROFIT_PCT:
+                msg = f"🏁 Take-Profit atingido ({change_pct:.2f}%) — realizando lucro."
+                alert_trade(SYMBOL, "take-profit", profit=change_pct)
+                log_event(msg)
+                place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+                position = None
+                entry_price = None
+
+        time.sleep(SLEEP_TIME)
+
+    except Exception as e:
+        error_text = f"⚠️ Erro no loop principal: {e}"
+        log_event(error_text)
+        alert_error(error_text)
+        time.sleep(10)
+```
+
+if **name** == "**main**":
+trade_loop()
+import os
+import time
+import pandas as pd
+from dotenv import load_dotenv
+from datetime import datetime
+
+from exchange_client import get_client, get_ohlcv, place_order
+from strategy import signal_from_ohlcv
+from telegram_alert import alert_info, alert_trade, alert_error, alert_stoploss
+
+# ============================================================
+
+# 🤖 TRAIDBOLT — Bot de Trade Automático
+
+# Autor: Glauco (Traidbolt)
+
+# Última atualização: 06/11/2025
+
+# ============================================================
+
+load_dotenv()
+
+SYMBOL = os.getenv("TRADE_SYMBOL", "BTC/USDT")
+TIMEFRAME = os.getenv("TIMEFRAME", "1m")
+STOP_LOSS_PCT = float(os.getenv("STOP_LOSS_PCT", 0.5))    # %
+TAKE_PROFIT_PCT = float(os.getenv("TAKE_PROFIT_PCT", 1.0)) # %
+TRADE_AMOUNT = float(os.getenv("TRADE_AMOUNT", 0.001))     # quantidade
+SLEEP_TIME = int(os.getenv("SLEEP_TIME", 20))              # intervalo de loop (s)
+
+LOG_FILE = "logs/bot.log"
+os.makedirs("logs", exist_ok=True)
+
+client = get_client()
+position = None
+entry_price = None
+
+# ======================= FUNÇÕES AUXILIARES ==========================
+
+def log_event(msg):
+"""Grava log local e exibe com timestamp"""
+timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+text = f"[{timestamp}] {msg}"
+print(text)
+with open(LOG_FILE, "a", encoding="utf-8") as f:
+f.write(text + "\n")
+
+# ======================= LOOP PRINCIPAL ==============================
+
+def trade_loop():
+global position, entry_price
+alert_info("🤖 Traidbolt iniciado e monitorando o mercado...")
+log_event("Bot iniciado.")
+
+```
+while True:
+    try:
+        df = get_ohlcv(client, SYMBOL, TIMEFRAME, 100)
+        signal = signal_from_ohlcv(df)
+        last_price = float(df['close'].iloc[-1])
+
+        # 🟢 Sinal de COMPRA
+        if signal == "buy" and position is None:
+            log_event(f"Sinal de COMPRA detectado para {SYMBOL} a {last_price:.2f} USDT")
+            alert_info(f"📈 *Sinal de COMPRA* detectado para `{SYMBOL}` a `{last_price:.2f}` USDT")
+            
+            order = place_order(client, SYMBOL, 'buy', TRADE_AMOUNT)
+            if order:
+                position = "long"
+                entry_price = last_price
+                alert_trade(SYMBOL, "compra", TRADE_AMOUNT)
+                log_event(f"Ordem de compra executada. Preço de entrada: {entry_price:.2f} USDT")
+
+        # 🔴 Sinal de VENDA
+        elif signal == "sell" and position == "long":
+            log_event(f"Sinal de VENDA detectado para {SYMBOL} a {last_price:.2f} USDT")
+            alert_info(f"📉 *Sinal de VENDA* detectado para `{SYMBOL}` a `{last_price:.2f}` USDT")
+            
+            order = place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+            if order:
+                position = None
+                alert_trade(SYMBOL, "venda", TRADE_AMOUNT)
+                log_event(f"Ordem de venda executada em {last_price:.2f} USDT")
+
+        # 🎯 Stop-loss / Take-profit automáticos
+        if position == "long" and entry_price:
+            change_pct = ((last_price - entry_price) / entry_price) * 100
+
+            # STOP LOSS
+            if change_pct <= -STOP_LOSS_PCT:
+                msg = f"❌ Stop-Loss atingido ({change_pct:.2f}%) — vendendo posição."
+                alert_stoploss(SYMBOL, last_price)
+                log_event(msg)
+                place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+                position = None
+                entry_price = None
+
+            # TAKE PROFIT
+            elif change_pct >= TAKE_PROFIT_PCT:
+                msg = f"🏁 Take-Profit atingido ({change_pct:.2f}%) — realizando lucro."
+                alert_trade(SYMBOL, "take-profit", profit=change_pct)
+                log_event(msg)
+                place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+                position = None
+                entry_price = None
+
+        time.sleep(SLEEP_TIME)
+
+    except Exception as e:
+        error_text = f"⚠️ Erro no loop principal: {e}"
+        log_event(error_text)
+        alert_error(error_text)
+        time.sleep(10)
+```
+
+if **name** == "**main**":
+trade_loop()
+import os
+import time
+import pandas as pd
+from dotenv import load_dotenv
+from datetime import datetime
+
+from exchange_client import get_client, get_ohlcv, place_order
+from strategy import signal_from_ohlcv
+from telegram_alert import alert_info, alert_trade, alert_error, alert_stoploss
+
+# ============================================================
+
+# 🤖 TRAIDBOLT — Bot de Trade Automático
+
+# Autor: Glauco (Traidbolt)
+
+# Última atualização: 06/11/2025
+
+# ============================================================
+
+load_dotenv()
+
+SYMBOL = os.getenv("TRADE_SYMBOL", "BTC/USDT")
+TIMEFRAME = os.getenv("TIMEFRAME", "1m")
+STOP_LOSS_PCT = float(os.getenv("STOP_LOSS_PCT", 0.5))    # %
+TAKE_PROFIT_PCT = float(os.getenv("TAKE_PROFIT_PCT", 1.0)) # %
+TRADE_AMOUNT = float(os.getenv("TRADE_AMOUNT", 0.001))     # quantidade
+SLEEP_TIME = int(os.getenv("SLEEP_TIME", 20))              # intervalo de loop (s)
+
+LOG_FILE = "logs/bot.log"
+os.makedirs("logs", exist_ok=True)
+
+client = get_client()
+position = None
+entry_price = None
+
+# ======================= FUNÇÕES AUXILIARES ==========================
+
+def log_event(msg):
+"""Grava log local e exibe com timestamp"""
+timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+text = f"[{timestamp}] {msg}"
+print(text)
+with open(LOG_FILE, "a", encoding="utf-8") as f:
+f.write(text + "\n")
+
+# ======================= LOOP PRINCIPAL ==============================
+
+def trade_loop():
+global position, entry_price
+alert_info("🤖 Traidbolt iniciado e monitorando o mercado...")
+log_event("Bot iniciado.")
+
+```
+while True:
+    try:
+        df = get_ohlcv(client, SYMBOL, TIMEFRAME, 100)
+        signal = signal_from_ohlcv(df)
+        last_price = float(df['close'].iloc[-1])
+
+        # 🟢 Sinal de COMPRA
+        if signal == "buy" and position is None:
+            log_event(f"Sinal de COMPRA detectado para {SYMBOL} a {last_price:.2f} USDT")
+            alert_info(f"📈 *Sinal de COMPRA* detectado para `{SYMBOL}` a `{last_price:.2f}` USDT")
+            
+            order = place_order(client, SYMBOL, 'buy', TRADE_AMOUNT)
+            if order:
+                position = "long"
+                entry_price = last_price
+                alert_trade(SYMBOL, "compra", TRADE_AMOUNT)
+                log_event(f"Ordem de compra executada. Preço de entrada: {entry_price:.2f} USDT")
+
+        # 🔴 Sinal de VENDA
+        elif signal == "sell" and position == "long":
+            log_event(f"Sinal de VENDA detectado para {SYMBOL} a {last_price:.2f} USDT")
+            alert_info(f"📉 *Sinal de VENDA* detectado para `{SYMBOL}` a `{last_price:.2f}` USDT")
+            
+            order = place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+            if order:
+                position = None
+                alert_trade(SYMBOL, "venda", TRADE_AMOUNT)
+                log_event(f"Ordem de venda executada em {last_price:.2f} USDT")
+
+        # 🎯 Stop-loss / Take-profit automáticos
+        if position == "long" and entry_price:
+            change_pct = ((last_price - entry_price) / entry_price) * 100
+
+            # STOP LOSS
+            if change_pct <= -STOP_LOSS_PCT:
+                msg = f"❌ Stop-Loss atingido ({change_pct:.2f}%) — vendendo posição."
+                alert_stoploss(SYMBOL, last_price)
+                log_event(msg)
+                place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+                position = None
+                entry_price = None
+
+            # TAKE PROFIT
+            elif change_pct >= TAKE_PROFIT_PCT:
+                msg = f"🏁 Take-Profit atingido ({change_pct:.2f}%) — realizando lucro."
+                alert_trade(SYMBOL, "take-profit", profit=change_pct)
+                log_event(msg)
+                place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+                position = None
+                entry_price = None
+
+        time.sleep(SLEEP_TIME)
+
+    except Exception as e:
+        error_text = f"⚠️ Erro no loop principal: {e}"
+        log_event(error_text)
+        alert_error(error_text)
+        time.sleep(10)
+```
+
+if **name** == "**main**":
+trade_loop()
+import os
+import time
+import pandas as pd
+from dotenv import load_dotenv
+from datetime import datetime
+
+from exchange_client import get_client, get_ohlcv, place_order
+from strategy import signal_from_ohlcv
+from telegram_alert import alert_info, alert_trade, alert_error, alert_stoploss
+
+# ============================================================
+
+# 🤖 TRAIDBOLT — Bot de Trade Automático
+
+# Autor: Glauco (Traidbolt)
+
+# Última atualização: 06/11/2025
+
+# ============================================================
+
+load_dotenv()
+
+SYMBOL = os.getenv("TRADE_SYMBOL", "BTC/USDT")
+TIMEFRAME = os.getenv("TIMEFRAME", "1m")
+STOP_LOSS_PCT = float(os.getenv("STOP_LOSS_PCT", 0.5))    # %
+TAKE_PROFIT_PCT = float(os.getenv("TAKE_PROFIT_PCT", 1.0)) # %
+TRADE_AMOUNT = float(os.getenv("TRADE_AMOUNT", 0.001))     # quantidade
+SLEEP_TIME = int(os.getenv("SLEEP_TIME", 20))              # intervalo de loop (s)
+
+LOG_FILE = "logs/bot.log"
+os.makedirs("logs", exist_ok=True)
+
+client = get_client()
+position = None
+entry_price = None
+
+# ======================= FUNÇÕES AUXILIARES ==========================
+
+def log_event(msg):
+"""Grava log local e exibe com timestamp"""
+timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+text = f"[{timestamp}] {msg}"
+print(text)
+with open(LOG_FILE, "a", encoding="utf-8") as f:
+f.write(text + "\n")
+
+# ======================= LOOP PRINCIPAL ==============================
+
+def trade_loop():
+global position, entry_price
+alert_info("🤖 Traidbolt iniciado e monitorando o mercado...")
+log_event("Bot iniciado.")
+
+```
+while True:
+    try:
+        df = get_ohlcv(client, SYMBOL, TIMEFRAME, 100)
+        signal = signal_from_ohlcv(df)
+        last_price = float(df['close'].iloc[-1])
+
+        # 🟢 Sinal de COMPRA
+        if signal == "buy" and position is None:
+            log_event(f"Sinal de COMPRA detectado para {SYMBOL} a {last_price:.2f} USDT")
+            alert_info(f"📈 *Sinal de COMPRA* detectado para `{SYMBOL}` a `{last_price:.2f}` USDT")
+            
+            order = place_order(client, SYMBOL, 'buy', TRADE_AMOUNT)
+            if order:
+                position = "long"
+                entry_price = last_price
+                alert_trade(SYMBOL, "compra", TRADE_AMOUNT)
+                log_event(f"Ordem de compra executada. Preço de entrada: {entry_price:.2f} USDT")
+
+        # 🔴 Sinal de VENDA
+        elif signal == "sell" and position == "long":
+            log_event(f"Sinal de VENDA detectado para {SYMBOL} a {last_price:.2f} USDT")
+            alert_info(f"📉 *Sinal de VENDA* detectado para `{SYMBOL}` a `{last_price:.2f}` USDT")
+            
+            order = place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+            if order:
+                position = None
+                alert_trade(SYMBOL, "venda", TRADE_AMOUNT)
+                log_event(f"Ordem de venda executada em {last_price:.2f} USDT")
+
+        # 🎯 Stop-loss / Take-profit automáticos
+        if position == "long" and entry_price:
+            change_pct = ((last_price - entry_price) / entry_price) * 100
+
+            # STOP LOSS
+            if change_pct <= -STOP_LOSS_PCT:
+                msg = f"❌ Stop-Loss atingido ({change_pct:.2f}%) — vendendo posição."
+                alert_stoploss(SYMBOL, last_price)
+                log_event(msg)
+                place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+                position = None
+                entry_price = None
+
+            # TAKE PROFIT
+            elif change_pct >= TAKE_PROFIT_PCT:
+                msg = f"🏁 Take-Profit atingido ({change_pct:.2f}%) — realizando lucro."
+                alert_trade(SYMBOL, "take-profit", profit=change_pct)
+                log_event(msg)
+                place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+                position = None
+                entry_price = None
+
+        time.sleep(SLEEP_TIME)
+
+    except Exception as e:
+        error_text = f"⚠️ Erro no loop principal: {e}"
+        log_event(error_text)
+        alert_error(error_text)
+        time.sleep(10)
+```
+
+if **name** == "**main**":
+trade_loop()
+import os
+import time
+import pandas as pd
+from dotenv import load_dotenv
+from datetime import datetime
+
+from exchange_client import get_client, get_ohlcv, place_order
+from strategy import signal_from_ohlcv
+from telegram_alert import alert_info, alert_trade, alert_error, alert_stoploss
+
+# ============================================================
+
+# 🤖 TRAIDBOLT — Bot de Trade Automático
+
+# Autor: Glauco (Traidbolt)
+
+# Última atualização: 06/11/2025
+
+# ============================================================
+
+load_dotenv()
+
+SYMBOL = os.getenv("TRADE_SYMBOL", "BTC/USDT")
+TIMEFRAME = os.getenv("TIMEFRAME", "1m")
+STOP_LOSS_PCT = float(os.getenv("STOP_LOSS_PCT", 0.5))    # %
+TAKE_PROFIT_PCT = float(os.getenv("TAKE_PROFIT_PCT", 1.0)) # %
+TRADE_AMOUNT = float(os.getenv("TRADE_AMOUNT", 0.001))     # quantidade
+SLEEP_TIME = int(os.getenv("SLEEP_TIME", 20))              # intervalo de loop (s)
+
+LOG_FILE = "logs/bot.log"
+os.makedirs("logs", exist_ok=True)
+
+client = get_client()
+position = None
+entry_price = None
+
+# ======================= FUNÇÕES AUXILIARES ==========================
+
+def log_event(msg):
+"""Grava log local e exibe com timestamp"""
+timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+text = f"[{timestamp}] {msg}"
+print(text)
+with open(LOG_FILE, "a", encoding="utf-8") as f:
+f.write(text + "\n")
+
+# ======================= LOOP PRINCIPAL ==============================
+
+def trade_loop():
+global position, entry_price
+alert_info("🤖 Traidbolt iniciado e monitorando o mercado...")
+log_event("Bot iniciado.")
+
+```
+while True:
+    try:
+        df = get_ohlcv(client, SYMBOL, TIMEFRAME, 100)
+        signal = signal_from_ohlcv(df)
+        last_price = float(df['close'].iloc[-1])
+
+        # 🟢 Sinal de COMPRA
+        if signal == "buy" and position is None:
+            log_event(f"Sinal de COMPRA detectado para {SYMBOL} a {last_price:.2f} USDT")
+            alert_info(f"📈 *Sinal de COMPRA* detectado para `{SYMBOL}` a `{last_price:.2f}` USDT")
+            
+            order = place_order(client, SYMBOL, 'buy', TRADE_AMOUNT)
+            if order:
+                position = "long"
+                entry_price = last_price
+                alert_trade(SYMBOL, "compra", TRADE_AMOUNT)
+                log_event(f"Ordem de compra executada. Preço de entrada: {entry_price:.2f} USDT")
+
+        # 🔴 Sinal de VENDA
+        elif signal == "sell" and position == "long":
+            log_event(f"Sinal de VENDA detectado para {SYMBOL} a {last_price:.2f} USDT")
+            alert_info(f"📉 *Sinal de VENDA* detectado para `{SYMBOL}` a `{last_price:.2f}` USDT")
+            
+            order = place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+            if order:
+                position = None
+                alert_trade(SYMBOL, "venda", TRADE_AMOUNT)
+                log_event(f"Ordem de venda executada em {last_price:.2f} USDT")
+
+        # 🎯 Stop-loss / Take-profit automáticos
+        if position == "long" and entry_price:
+            change_pct = ((last_price - entry_price) / entry_price) * 100
+
+            # STOP LOSS
+            if change_pct <= -STOP_LOSS_PCT:
+                msg = f"❌ Stop-Loss atingido ({change_pct:.2f}%) — vendendo posição."
+                alert_stoploss(SYMBOL, last_price)
+                log_event(msg)
+                place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+                position = None
+                entry_price = None
+
+            # TAKE PROFIT
+            elif change_pct >= TAKE_PROFIT_PCT:
+                msg = f"🏁 Take-Profit atingido ({change_pct:.2f}%) — realizando lucro."
+                alert_trade(SYMBOL, "take-profit", profit=change_pct)
+                log_event(msg)
+                place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+                position = None
+                entry_price = None
+
+        time.sleep(SLEEP_TIME)
+
+    except Exception as e:
+        error_text = f"⚠️ Erro no loop principal: {e}"
+        log_event(error_text)
+        alert_error(error_text)
+        time.sleep(10)
+```
+
+if **name** == "**main**":
+trade_loop()
+import os
+import time
+import pandas as pd
+from dotenv import load_dotenv
+from datetime import datetime
+
+from exchange_client import get_client, get_ohlcv, place_order
+from strategy import signal_from_ohlcv
+from telegram_alert import alert_info, alert_trade, alert_error, alert_stoploss
+
+# ============================================================
+
+# 🤖 TRAIDBOLT — Bot de Trade Automático
+
+# Autor: Glauco (Traidbolt)
+
+# Última atualização: 06/11/2025
+
+# ============================================================
+
+load_dotenv()
+
+SYMBOL = os.getenv("TRADE_SYMBOL", "BTC/USDT")
+TIMEFRAME = os.getenv("TIMEFRAME", "1m")
+STOP_LOSS_PCT = float(os.getenv("STOP_LOSS_PCT", 0.5))    # %
+TAKE_PROFIT_PCT = float(os.getenv("TAKE_PROFIT_PCT", 1.0)) # %
+TRADE_AMOUNT = float(os.getenv("TRADE_AMOUNT", 0.001))     # quantidade
+SLEEP_TIME = int(os.getenv("SLEEP_TIME", 20))              # intervalo de loop (s)
+
+LOG_FILE = "logs/bot.log"
+os.makedirs("logs", exist_ok=True)
+
+client = get_client()
+position = None
+entry_price = None
+
+# ======================= FUNÇÕES AUXILIARES ==========================
+
+def log_event(msg):
+"""Grava log local e exibe com timestamp"""
+timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+text = f"[{timestamp}] {msg}"
+print(text)
+with open(LOG_FILE, "a", encoding="utf-8") as f:
+f.write(text + "\n")
+
+# ======================= LOOP PRINCIPAL ==============================
+
+def trade_loop():
+global position, entry_price
+alert_info("🤖 Traidbolt iniciado e monitorando o mercado...")
+log_event("Bot iniciado.")
+
+```
+while True:
+    try:
+        df = get_ohlcv(client, SYMBOL, TIMEFRAME, 100)
+        signal = signal_from_ohlcv(df)
+        last_price = float(df['close'].iloc[-1])
+
+        # 🟢 Sinal de COMPRA
+        if signal == "buy" and position is None:
+            log_event(f"Sinal de COMPRA detectado para {SYMBOL} a {last_price:.2f} USDT")
+            alert_info(f"📈 *Sinal de COMPRA* detectado para `{SYMBOL}` a `{last_price:.2f}` USDT")
+            
+            order = place_order(client, SYMBOL, 'buy', TRADE_AMOUNT)
+            if order:
+                position = "long"
+                entry_price = last_price
+                alert_trade(SYMBOL, "compra", TRADE_AMOUNT)
+                log_event(f"Ordem de compra executada. Preço de entrada: {entry_price:.2f} USDT")
+
+        # 🔴 Sinal de VENDA
+        elif signal == "sell" and position == "long":
+            log_event(f"Sinal de VENDA detectado para {SYMBOL} a {last_price:.2f} USDT")
+            alert_info(f"📉 *Sinal de VENDA* detectado para `{SYMBOL}` a `{last_price:.2f}` USDT")
+            
+            order = place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+            if order:
+                position = None
+                alert_trade(SYMBOL, "venda", TRADE_AMOUNT)
+                log_event(f"Ordem de venda executada em {last_price:.2f} USDT")
+
+        # 🎯 Stop-loss / Take-profit automáticos
+        if position == "long" and entry_price:
+            change_pct = ((last_price - entry_price) / entry_price) * 100
+
+            # STOP LOSS
+            if change_pct <= -STOP_LOSS_PCT:
+                msg = f"❌ Stop-Loss atingido ({change_pct:.2f}%) — vendendo posição."
+                alert_stoploss(SYMBOL, last_price)
+                log_event(msg)
+                place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+                position = None
+                entry_price = None
+
+            # TAKE PROFIT
+            elif change_pct >= TAKE_PROFIT_PCT:
+                msg = f"🏁 Take-Profit atingido ({change_pct:.2f}%) — realizando lucro."
+                alert_trade(SYMBOL, "take-profit", profit=change_pct)
+                log_event(msg)
+                place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+                position = None
+                entry_price = None
+
+        time.sleep(SLEEP_TIME)
+
+    except Exception as e:
+        error_text = f"⚠️ Erro no loop principal: {e}"
+        log_event(error_text)
+        alert_error(error_text)
+        time.sleep(10)
+```
+
+if **name** == "**main**":
+trade_loop()
+import os
+import time
+import pandas as pd
+from dotenv import load_dotenv
+from datetime import datetime
+
+from exchange_client import get_client, get_ohlcv, place_order
+from strategy import signal_from_ohlcv
+from telegram_alert import alert_info, alert_trade, alert_error, alert_stoploss
+
+# ============================================================
+
+# 🤖 TRAIDBOLT — Bot de Trade Automático
+
+# Autor: Glauco (Traidbolt)
+
+# Última atualização: 06/11/2025
+
+# ============================================================
+
+load_dotenv()
+
+SYMBOL = os.getenv("TRADE_SYMBOL", "BTC/USDT")
+TIMEFRAME = os.getenv("TIMEFRAME", "1m")
+STOP_LOSS_PCT = float(os.getenv("STOP_LOSS_PCT", 0.5))    # %
+TAKE_PROFIT_PCT = float(os.getenv("TAKE_PROFIT_PCT", 1.0)) # %
+TRADE_AMOUNT = float(os.getenv("TRADE_AMOUNT", 0.001))     # quantidade
+SLEEP_TIME = int(os.getenv("SLEEP_TIME", 20))              # intervalo de loop (s)
+
+LOG_FILE = "logs/bot.log"
+os.makedirs("logs", exist_ok=True)
+
+client = get_client()
+position = None
+entry_price = None
+
+# ======================= FUNÇÕES AUXILIARES ==========================
+
+def log_event(msg):
+"""Grava log local e exibe com timestamp"""
+timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+text = f"[{timestamp}] {msg}"
+print(text)
+with open(LOG_FILE, "a", encoding="utf-8") as f:
+f.write(text + "\n")
+
+# ======================= LOOP PRINCIPAL ==============================
+
+def trade_loop():
+global position, entry_price
+alert_info("🤖 Traidbolt iniciado e monitorando o mercado...")
+log_event("Bot iniciado.")
+
+```
+while True:
+    try:
+        df = get_ohlcv(client, SYMBOL, TIMEFRAME, 100)
+        signal = signal_from_ohlcv(df)
+        last_price = float(df['close'].iloc[-1])
+
+        # 🟢 Sinal de COMPRA
+        if signal == "buy" and position is None:
+            log_event(f"Sinal de COMPRA detectado para {SYMBOL} a {last_price:.2f} USDT")
+            alert_info(f"📈 *Sinal de COMPRA* detectado para `{SYMBOL}` a `{last_price:.2f}` USDT")
+            
+            order = place_order(client, SYMBOL, 'buy', TRADE_AMOUNT)
+            if order:
+                position = "long"
+                entry_price = last_price
+                alert_trade(SYMBOL, "compra", TRADE_AMOUNT)
+                log_event(f"Ordem de compra executada. Preço de entrada: {entry_price:.2f} USDT")
+
+        # 🔴 Sinal de VENDA
+        elif signal == "sell" and position == "long":
+            log_event(f"Sinal de VENDA detectado para {SYMBOL} a {last_price:.2f} USDT")
+            alert_info(f"📉 *Sinal de VENDA* detectado para `{SYMBOL}` a `{last_price:.2f}` USDT")
+            
+            order = place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+            if order:
+                position = None
+                alert_trade(SYMBOL, "venda", TRADE_AMOUNT)
+                log_event(f"Ordem de venda executada em {last_price:.2f} USDT")
+
+        # 🎯 Stop-loss / Take-profit automáticos
+        if position == "long" and entry_price:
+            change_pct = ((last_price - entry_price) / entry_price) * 100
+
+            # STOP LOSS
+            if change_pct <= -STOP_LOSS_PCT:
+                msg = f"❌ Stop-Loss atingido ({change_pct:.2f}%) — vendendo posição."
+                alert_stoploss(SYMBOL, last_price)
+                log_event(msg)
+                place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+                position = None
+                entry_price = None
+
+            # TAKE PROFIT
+            elif change_pct >= TAKE_PROFIT_PCT:
+                msg = f"🏁 Take-Profit atingido ({change_pct:.2f}%) — realizando lucro."
+                alert_trade(SYMBOL, "take-profit", profit=change_pct)
+                log_event(msg)
+                place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+                position = None
+                entry_price = None
+
+        time.sleep(SLEEP_TIME)
+
+    except Exception as e:
+        error_text = f"⚠️ Erro no loop principal: {e}"
+        log_event(error_text)
+        alert_error(error_text)
+        time.sleep(10)
+```
+
+if **name** == "**main**":
+trade_loop()
+import os
+import time
+import pandas as pd
+from dotenv import load_dotenv
+from datetime import datetime
+
+from exchange_client import get_client, get_ohlcv, place_order
+from strategy import signal_from_ohlcv
+from telegram_alert import alert_info, alert_trade, alert_error, alert_stoploss
+
+# ============================================================
+
+# 🤖 TRAIDBOLT — Bot de Trade Automático
+
+# Autor: Glauco (Traidbolt)
+
+# Última atualização: 06/11/2025
+
+# ============================================================
+
+load_dotenv()
+
+SYMBOL = os.getenv("TRADE_SYMBOL", "BTC/USDT")
+TIMEFRAME = os.getenv("TIMEFRAME", "1m")
+STOP_LOSS_PCT = float(os.getenv("STOP_LOSS_PCT", 0.5))    # %
+TAKE_PROFIT_PCT = float(os.getenv("TAKE_PROFIT_PCT", 1.0)) # %
+TRADE_AMOUNT = float(os.getenv("TRADE_AMOUNT", 0.001))     # quantidade
+SLEEP_TIME = int(os.getenv("SLEEP_TIME", 20))              # intervalo de loop (s)
+
+LOG_FILE = "logs/bot.log"
+os.makedirs("logs", exist_ok=True)
+
+client = get_client()
+position = None
+entry_price = None
+
+# ======================= FUNÇÕES AUXILIARES ==========================
+
+def log_event(msg):
+"""Grava log local e exibe com timestamp"""
+timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+text = f"[{timestamp}] {msg}"
+print(text)
+with open(LOG_FILE, "a", encoding="utf-8") as f:
+f.write(text + "\n")
+
+# ======================= LOOP PRINCIPAL ==============================
+
+def trade_loop():
+global position, entry_price
+alert_info("🤖 Traidbolt iniciado e monitorando o mercado...")
+log_event("Bot iniciado.")
+
+```
+while True:
+    try:
+        df = get_ohlcv(client, SYMBOL, TIMEFRAME, 100)
+        signal = signal_from_ohlcv(df)
+        last_price = float(df['close'].iloc[-1])
+
+        # 🟢 Sinal de COMPRA
+        if signal == "buy" and position is None:
+            log_event(f"Sinal de COMPRA detectado para {SYMBOL} a {last_price:.2f} USDT")
+            alert_info(f"📈 *Sinal de COMPRA* detectado para `{SYMBOL}` a `{last_price:.2f}` USDT")
+            
+            order = place_order(client, SYMBOL, 'buy', TRADE_AMOUNT)
+            if order:
+                position = "long"
+                entry_price = last_price
+                alert_trade(SYMBOL, "compra", TRADE_AMOUNT)
+                log_event(f"Ordem de compra executada. Preço de entrada: {entry_price:.2f} USDT")
+
+        # 🔴 Sinal de VENDA
+        elif signal == "sell" and position == "long":
+            log_event(f"Sinal de VENDA detectado para {SYMBOL} a {last_price:.2f} USDT")
+            alert_info(f"📉 *Sinal de VENDA* detectado para `{SYMBOL}` a `{last_price:.2f}` USDT")
+            
+            order = place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+            if order:
+                position = None
+                alert_trade(SYMBOL, "venda", TRADE_AMOUNT)
+                log_event(f"Ordem de venda executada em {last_price:.2f} USDT")
+
+        # 🎯 Stop-loss / Take-profit automáticos
+        if position == "long" and entry_price:
+            change_pct = ((last_price - entry_price) / entry_price) * 100
+
+            # STOP LOSS
+            if change_pct <= -STOP_LOSS_PCT:
+                msg = f"❌ Stop-Loss atingido ({change_pct:.2f}%) — vendendo posição."
+                alert_stoploss(SYMBOL, last_price)
+                log_event(msg)
+                place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+                position = None
+                entry_price = None
+
+            # TAKE PROFIT
+            elif change_pct >= TAKE_PROFIT_PCT:
+                msg = f"🏁 Take-Profit atingido ({change_pct:.2f}%) — realizando lucro."
+                alert_trade(SYMBOL, "take-profit", profit=change_pct)
+                log_event(msg)
+                place_order(client, SYMBOL, 'sell', TRADE_AMOUNT)
+                position = None
+                entry_price = None
+
+        time.sleep(SLEEP_TIME)
+
+    except Exception as e:
+        error_text = f"⚠️ Erro no loop principal: {e}"
+        log_event(error_text)
+        alert_error(error_text)
+        time.sleep(10)
+```
+
+if **name** == "**main**":
+trade_loop()
 
 
