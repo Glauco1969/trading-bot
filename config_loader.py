@@ -17,8 +17,4 @@ def load_and_validate_env():
     print("✅ Ambiente carregado com sucesso!")
     print(f"Exchange: {os.getenv('EXCHANGE')}")
     print(f"Par de trade: {os.getenv('SYMBOL')}")
-    print(f"Testnet: {os.getenv('TESTNET')}")
-    print(f"Telegram Chat ID: {os.getenv('TELEGRAM_CHAT_ID')}")
-
-if __name__ == "__main__":
-    load_and_validate_env()
+    print(f
