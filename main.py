@@ -6,7 +6,7 @@ import os
 import sys
 
 # --- CONFIGURAÇÃO ---
-NGROK_PATH = "/storage/emulated/0/ngrok"  # Caminho do ngrok
+NGROK_PATH = "ngrok.exe"  # Caminho do ngrok
 PORT = 5000                               # Porta do Flask
 APP_PATH = "/storage/emulated/0/Download/trading-bot-main/trading-bot-main/main.py"  # Seu main.py
 
