@@ -1,24 +1,53 @@
-import subprocess
-import time
-import requests
 import json
 import os
 import sys
+import os
+import platform
+import subprocess
+from flask import Flask, render_template
 
-# --- CONFIGURAÇÃO ---
-NGROK_PATH = "ngrok.exe"  # Caminho do ngrok
-PORT = 5000                               # Porta do Flask
-APP_PATH = "/storage/emulated/0/Download/trading-bot-main/trading-bot-main/main.py"  # Seu main.py
+# --- Detectar o sistema operacional ---
+SO = platform.system().lower()
 
-# --- Verifica se ngrok é executável ---
-if not os.access(NGROK_PATH, os.X_OK):
-    print(f"⚠️ ngrok não tem permissão de execução. Corrigindo...")
+if 'windows' in SO:
+    NGROK_PATH = os.path.join(os.getcwd(), "ngrok.exe")
+else:
+    NGROK_PATH = "/storage/emulated/0/ngrok"
+
+# --- Verificar se o ngrok existe ---
+if not os.path.exists(NGROK_PATH):
+    print(f"❌ Ngrok não encontrado em: {NGROK_PATH}")
+    print("👉 No Windows, coloque o arquivo ngrok.exe dentro da pasta do projeto.")
+    print("👉 No Android (Termux), baixe e coloque /storage/emulated/0/ngrok")
+    exit()
+
+# --- Tornar o ngrok executável (só Android) ---
+if 'windows' not in SO:
     os.chmod(NGROK_PATH, 0o755)
 
-# --- Inicia Flask ---
-print("🚀 Iniciando servidor Flask...")
-flask_proc = subprocess.Popen(["python3", APP_PATH])
-time.sleep(10)  # Espera o Flask subir
+# --- Iniciar o Flask ---
+app = Flask(__name__)
+
+@app.route('/')
+def landing():
+    return render_template('index.html')
+
+@app.route('/painel')
+def painel():
+    return render_template('painel.html')
+
+# --- Iniciar ngrok ---
+def start_ngrok():
+    print("🚀 Iniciando ngrok...")
+    if 'windows' in SO:
+        subprocess.Popen([NGROK_PATH, "http", "5000"])
+    else:
+        subprocess.Popen([NGROK_PATH, "http", "5000", "--log=stdout"])
+
+if __name__ == '__main__':
+    start_ngrok()
+    app.run(host='0.0.0.0', port=5000, debug=True)
+
 
 # --- Inicia ngrok ---
 print("🌐 Iniciando ngrok...")
