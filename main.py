@@ -1,76 +1,70 @@
-import json
-import sys
-import os
-import platform
 import subprocess
-from flask import Flask, render_template
+import time
+import requests
+import json
+import os
+import sys
+from dotenv import load_dotenv
 
-# --- Detectar o sistema operacional ---
-SO = platform.system().lower()
+# === Carrega variáveis do .env ===
+load_dotenv()
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
-if 'windows' in SO:
-    NGROK_PATH = os.path.join(os.getcwd(), "ngrok.exe")
-else:
-    NGROK_PATH = "/storage/emulated/0/ngrok"
+# === CONFIGURAÇÃO ===
+NGROK_PATH = "C:\\Users\\84857528487\\Desktop\\traid-bot\\trading-bot\\ngrok.exe"
+PORT = 5000
+APP_PATH = "C:\\Users\\84857528487\\Desktop\\traid-bot\\trading-bot\\app.py"
 
-# --- Verificar se o ngrok existe ---
-if not os.path.exists(NGROK_PATH):
-    print(f"❌ Ngrok não encontrado em: {NGROK_PATH}")
-    print("👉 No Windows, coloque o arquivo ngrok.exe dentro da pasta do projeto.")
-    print("👉 No Android (Termux), baixe e coloque /storage/emulated/0/ngrok")
-    exit()
+# === Função para enviar mensagem no Telegram ===
+def send_telegram_message(msg):
+    if not BOT_TOKEN or not CHAT_ID:
+        print("⚠️ BOT_TOKEN ou CHAT_ID não configurados no .env")
+        return
+    try:
+        requests.get(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+            params={"chat_id": CHAT_ID, "text": msg},
+            timeout=5
+        )
+        print(f"📩 Mensagem enviada: {msg}")
+    except Exception as e:
+        print(f"❌ Erro ao enviar mensagem: {e}")
 
-# --- Tornar o ngrok executável (só Android) ---
-if 'windows' not in SO:
-    os.chmod(NGROK_PATH, 0o755)
-
-# --- Iniciar o Flask ---
-app = Flask(__name__)
-
-@app.route('/')
-def landing():
-    return render_template('index.html')
-
-@app.route('/painel')
-def painel():
-    return render_template('painel.html')
-
-# --- Iniciar ngrok ---
-def start_ngrok():
-    print("🚀 Iniciando ngrok...")
-    if 'windows' in SO:
-        subprocess.Popen([NGROK_PATH, "http", "5000"])
-    else:
-        subprocess.Popen([NGROK_PATH, "http", "5000", "--log=stdout"])
-
-if __name__ == '__main__':
-    start_ngrok()
-    app.run(host='0.0.0.0', port=5000, debug=True)
-
-
-# --- Inicia ngrok ---
-print("🌐 Iniciando ngrok...")
-ngrok_proc = subprocess.Popen([NGROK_PATH, "http", str(PORT)])
+# === Inicia o Flask ===
+print("🚀 Iniciando servidor Flask...")
+flask_proc = subprocess.Popen(["python", APP_PATH])
 time.sleep(5)
 
-# --- Tenta obter link público do ngrok ---
+# === Inicia o ngrok ===
+print("🌐 Iniciando ngrok...")
+ngrok_proc = subprocess.Popen(
+    [NGROK_PATH, "http", str(PORT)],
+    stdout=subprocess.DEVNULL,
+    stderr=subprocess.DEVNULL
+)
+time.sleep(5)
+
+# === Obtém o link público ===
 public_url = None
-for i in range(5):
+for _ in range(10):
     try:
-        response = requests.get("http://127.0.0.1:4040/api/tunnels")
-        data = json.loads(response.text)
+        res = requests.get("http://127.0.0.1:4040/api/tunnels")
+        data = res.json()
         public_url = data["tunnels"][0]["public_url"]
         break
     except Exception:
         print("⏳ Tentando obter link público...")
-        time.sleep(3)
+        time.sleep(2)
 
 if public_url:
-    print(f"\n✅ Painel Flask online em: {public_url}\n")
+    print(f"\n✅ Painel online em: {public_url}\n")
+    send_telegram_message(f"🚀 Painel Flask online!\n🌐 Link: {public_url}")
 else:
-    print("❌ Não foi possível obter o link do ngrok. Verifique se está rodando corretamente.")
+    print("❌ Não foi possível obter o link público do ngrok.")
+    send_telegram_message("⚠️ Erro ao gerar o link público do ngrok.")
 
-# --- Mantém script ativo ---
+# === Mantém o script ativo ===
 try:
     while True:
         time.sleep(1)
