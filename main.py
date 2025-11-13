@@ -1,48 +1,65 @@
-import subprocess
+from flask import Flask, render_template, jsonify
+import threading
 import time
-import requests
-import json
 import os
-import sys
+from bot import trade_loop
 
-# --- CONFIGURAÇÃO (versão para Windows) ---
-NGROK_PATH = r"C:\Users\84857528487\Desktop\traid-bot\trading-bot\ngrok.exe"  # Caminho do ngrok
-PORT = 5000
-APP_PATH = r"C:\Users\84857528487\Desktop\traid-bot\trading-bot\app.py"       # Caminho do Flask app
+app = Flask(__name__)
 
-# --- Inicia Flask ---
-print("🚀 Iniciando servidor Flask...")
-flask_proc = subprocess.Popen(["python", APP_PATH])
-time.sleep(10)  # Espera o Flask iniciar
+bot_thread = None
+bot_running = False
 
-# --- Inicia ngrok ---
-print("🌐 Iniciando ngrok...")
-ngrok_proc = subprocess.Popen([NGROK_PATH, "http", str(PORT)])
-time.sleep(5)
 
-# --- Obtém o link público ---
-public_url = None
-for i in range(5):
-    try:
-        response = requests.get("http://127.0.0.1:4040/api/tunnels")
-        data = json.loads(response.text)
-        public_url = data["tunnels"][0]["public_url"]
-        break
-    except Exception as e:
-        print("⏳ Tentando obter link público...")
-        time.sleep(3)
+# ============================================================
+# --- ROTAS DO PAINEL WEB ---
+# ============================================================
 
-if public_url:
-    print(f"\n✅ Painel Flask online em: {public_url}\n")
-else:
-    print("❌ Não foi possível obter o link do ngrok. Verifique se está rodando corretamente.")
+@app.route("/")
+def home():
+    return render_template("index.html")
 
-# --- Mantém o script ativo ---
-try:
-    while True:
-        time.sleep(1)
-except KeyboardInterrupt:
-    print("\n🛑 Encerrando Flask e ngrok...")
-    flask_proc.terminate()
-    ngrok_proc.terminate()
-    sys.exit(0)
+@app.route("/painel")
+def painel():
+    return render_template("painel.html")
+
+@app.route("/status")
+def status():
+    log_path = "logs/bot.log"
+    log_content = ""
+    if os.path.exists(log_path):
+        with open(log_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()[-10:]
+            log_content = "".join(lines)
+    return jsonify({
+        "status": "Rodando" if bot_running else "Parado",
+        "log": log_content
+    })
+
+
+@app.route("/start")
+def start_bot():
+    global bot_thread, bot_running
+    if not bot_running:
+        bot_thread = threading.Thread(target=trade_loop, daemon=True)
+        bot_thread.start()
+        bot_running = True
+        return jsonify({"message": "🤖 Bot iniciado!"})
+    else:
+        return jsonify({"message": "⚠️ Bot já está rodando."})
+
+
+@app.route("/stop")
+def stop_bot():
+    global bot_running
+    bot_running = False
+    return jsonify({"message": "🛑 Bot parado manualmente."})
+
+
+# ============================================================
+# --- INICIAR SERVIDOR ---
+# ============================================================
+
+if __name__ == "__main__":
+    print("🚀 Painel Traidbolt iniciado em: http://127.0.0.1:5000")
+    app.run(host="0.0.0.0", port=5000, debug=True)
+
