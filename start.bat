@@ -1,4 +1,5 @@
 @echo off
+title Traidbolt - Início Automático
 echo ===========================================
 echo 🤖 Iniciando ambiente Traidbolt no Windows
 echo ===========================================
@@ -6,7 +7,7 @@ echo ===========================================
 REM 1️⃣ Verifica se o Python está instalado
 where python >nul 2>nul
 if %errorlevel% neq 0 (
-    echo ❌ Python não encontrado! Instale-o em https://www.python.org/downloads/
+    echo ❌ Python não encontrado! Instale em https://www.python.org/downloads/
     pause
     exit /b
 )
@@ -30,7 +31,7 @@ if exist requirements.txt (
 )
 
 REM 5️⃣ Inicia o Flask
-echo 🚀 Iniciando servidor Flask...
+echo 🚀 Iniciando servidor Traidbolt Flask...
 if exist main.py (
     python main.py
 ) else if exist app.py (
@@ -39,4 +40,9 @@ if exist main.py (
     echo ❌ Nenhum arquivo Flask encontrado (main.py ou app.py).
 )
 
+echo ===========================================
+echo ✅ Painel iniciado! Pressione CTRL+C para encerrar.
+echo ===========================================
+
 pause
+
