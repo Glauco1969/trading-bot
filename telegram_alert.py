@@ -1,94 +1,83 @@
-import os
 import requests
-import threading
+import os
 from datetime import datetime
-from dotenv import load_dotenv
 
 # ============================================================
-
-# 📢 Telegram Alert System — Traidbolt
-
-# Autor: Glauco (Traidbolt)
-
-# Última atualização: 06/11/2025
-
+# 🚀 Configurações básicas do Telegram
 # ============================================================
 
-load_dotenv()
+# Pegue o token e o chat_id do seu bot (configure no .env se quiser)
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "SEU_TOKEN_AQUI")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "SEU_CHAT_ID_AQUI")
 
-TOKEN = os.getenv("TELEGRAM_TOKEN")
-CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
-LOG_FILE = "logs/telegram_fallback.log"
+# ============================================================
+# 🧩 Função base de envio de mensagem
+# ============================================================
 
-# ===================== Função base ==========================
+def send_telegram_message(msg: str):
+    """Envia uma mensagem para o Telegram com tratamento de erros"""
+    try:
+        if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+            print("⚠️  TELEGRAM_TOKEN ou CHAT_ID não configurados.")
+            return
 
-def _send_message(message, parse_mode="Markdown"):
-"""Envia uma mensagem para o Telegram com tratamento de erros"""
-if not TOKEN or not CHAT_ID:
-_log_local(f"⚠️ Telegram não configurado. Mensagem: {message}")
-return
+        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+        payload = {
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": msg,
+            "parse_mode": "HTML"
+        }
 
-```
-url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-payload = {"chat_id": CHAT_ID, "text": message, "parse_mode": parse_mode}
+        response = requests.post(url, data=payload)
+        if response.status_code == 200:
+            print(f"✅ Mensagem enviada: {msg}")
+        else:
+            print(f"⚠️ Erro ao enviar mensagem ({response.status_code}): {response.text}")
 
-try:
-    resp = requests.post(url, json=payload, timeout=10)
-    if resp.status_code != 200:
-        _log_local(f"❌ Erro Telegram {resp.status_code}: {resp.text}")
-except Exception as e:
-    _log_local(f"🚨 Falha ao enviar alerta: {e} | Conteúdo: {message}")
-```
+    except Exception as e:
+        print(f"❌ Erro no envio ao Telegram: {e}")
 
-def _async_send(message):
-"""Envia de forma assíncrona (não trava o bot)"""
-thread = threading.Thread(target=_send_message, args=(message,))
-thread.daemon = True
-thread.start()
 
-def _log_local(msg):
-"""Salva fallback de mensagens não enviadas"""
-os.makedirs("logs", exist_ok=True)
-with open(LOG_FILE, "a", encoding="utf-8") as f:
-f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}\n")
+# ============================================================
+# 💬 Funções de alerta específicas
+# ============================================================
 
-# ===================== Tipos de Alerta ======================
+def alert_info(msg: str):
+    """Mensagem informativa (azul)"""
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    formatted = f"ℹ️ <b>[INFO - {timestamp}]</b>\n{msg}"
+    send_telegram_message(formatted)
 
-def alert_info(text):
-_async_send(f"ℹ️ *INFO:*\n{text}")
 
-def alert_error(text):
-_async_send(f"❌ *ERRO:*\n{text}")
+def alert_trade(msg: str):
+    """Mensagem de trade executado"""
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    formatted = f"💰 <b>[TRADE - {timestamp}]</b>\n{msg}"
+    send_telegram_message(formatted)
 
-def alert_trade(symbol, action, amount=None, profit=None):
-msg = f"💹 *TRADE EXECUTADO*\n"
-msg += f"🪙 Par: `{symbol}`\n"
-msg += f"⚙️ Ação: *{action.upper()}*\n"
-if amount:
-msg += f"📦 Quantidade: `{amount}`\n"
-if profit is not None:
-emoji = '🟢' if profit >= 0 else '🔴'
-msg += f"{emoji} Lucro: `{profit:.2f}%`\n"
-_async_send(msg)
 
-def alert_swap(from_token, to_token, amount):
-msg = (
-f"🔄 *SWAP REALIZADO*\n"
-f"💰 `{amount}` {from_token} → {to_token}\n"
-)
-_async_send(msg)
+def alert_error(msg: str):
+    """Mensagem de erro"""
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    formatted = f"❌ <b>[ERRO - {timestamp}]</b>\n{msg}"
+    send_telegram_message(formatted)
 
-def alert_stoploss(symbol, price):
-_async_send(f"🛑 *STOP-LOSS ATIVADO*\n🪙 Par: `{symbol}`\n💥 Preço: `{price}`")
 
-def alert_reinvest(symbol, amount):
-_async_send(f"♻️ *REINVESTIMENTO*\n🪙 Par: `{symbol}`\n💎 Valor reinvestido: `{amount}`")
+def alert_stoploss(msg: str):
+    """Mensagem de stop-loss ativado"""
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    formatted = f"🛑 <b>[STOP-LOSS - {timestamp}]</b>\n{msg}"
+    send_telegram_message(formatted)
 
-# ===================== Teste direto =========================
 
-if **name** == "**main**":
-alert_info("Sistema de alertas do Traidbolt iniciado com sucesso ✅")
-alert_trade("SOL/USDC", "compra", amount=0.5, profit=2.45)
-alert_stoploss("SOL/USDC", 165.23)
-alert_error("Erro de conexão com a API Jupiter.")
-alert_reinvest("SOL/USDC", 0.35)
+# ============================================================
+# 🔧 Teste rápido
+# ============================================================
+
+if __name__ == "__main__":
+    print("🧠 Testando alertas do Telegram...")
+    alert_info("Sistema Traidbolt iniciado.")
+    alert_trade("Compra executada com sucesso no par SOL/USDC.")
+    alert_error("Falha ao conectar à API Jupiter.")
+    alert_stoploss("Stop-loss acionado em -20%.")
+
