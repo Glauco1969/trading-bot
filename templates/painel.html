@@ -1,1 +1,60 @@
-<h1>Painel Traidbolt</h1><p>Seu painel atual aqui.</p>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Traidbolt Painel</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body { background: #0f172a; color: white; font-family: 'Inter', sans-serif; }
+    .log-box { background: #1e293b; padding: 10px; border-radius: 10px; max-height: 250px; overflow-y: auto; }
+    button { transition: 0.3s; }
+    button:hover { opacity: 0.9; }
+  </style>
+</head>
+<body class="p-6">
+
+  <h1 class="text-3xl font-bold mb-4 text-center text-cyan-400">🤖 Traidbolt - Painel de Controle</h1>
+
+  <div class="flex justify-center space-x-4 mb-6">
+    <button id="startBtn" class="bg-green-500 px-4 py-2 rounded-lg">Iniciar Bot</button>
+    <button id="stopBtn" class="bg-red-500 px-4 py-2 rounded-lg">Parar Bot</button>
+  </div>
+
+  <div class="text-center mb-4">
+    <p>Status: <span id="status" class="font-bold text-yellow-300">Carregando...</span></p>
+  </div>
+
+  <div class="log-box">
+    <pre id="logs">Carregando logs...</pre>
+  </div>
+
+  <script>
+    async function updateStatus() {
+      const res = await fetch('/status');
+      const data = await res.json();
+      document.getElementById('status').textContent = data.status;
+      document.getElementById('logs').textContent = data.log || 'Sem logs.';
+    }
+    async function startBot() {
+      const res = await fetch('/start');
+      const data = await res.json();
+      alert(data.message);
+      updateStatus();
+    }
+    async function stopBot() {
+      const res = await fetch('/stop');
+      const data = await res.json();
+      alert(data.message);
+      updateStatus();
+    }
+
+    document.getElementById('startBtn').addEventListener('click', startBot);
+    document.getElementById('stopBtn').addEventListener('click', stopBot);
+    setInterval(updateStatus, 5000);
+    updateStatus();
+  </script>
+
+</body>
+</html>
+
