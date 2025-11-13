@@ -6,9 +6,9 @@ from datetime import datetime
 # 🚀 Configurações básicas do Telegram
 # ============================================================
 
-# Pegue o token e o chat_id do seu bot (configure no .env se quiser)
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "SEU_TOKEN_AQUI")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "SEU_CHAT_ID_AQUI")
+
 
 # ============================================================
 # 🧩 Função base de envio de mensagem
@@ -43,28 +43,24 @@ def send_telegram_message(msg: str):
 # ============================================================
 
 def alert_info(msg: str):
-    """Mensagem informativa (azul)"""
     timestamp = datetime.now().strftime("%H:%M:%S")
     formatted = f"ℹ️ <b>[INFO - {timestamp}]</b>\n{msg}"
     send_telegram_message(formatted)
 
 
 def alert_trade(msg: str):
-    """Mensagem de trade executado"""
     timestamp = datetime.now().strftime("%H:%M:%S")
     formatted = f"💰 <b>[TRADE - {timestamp}]</b>\n{msg}"
     send_telegram_message(formatted)
 
 
 def alert_error(msg: str):
-    """Mensagem de erro"""
     timestamp = datetime.now().strftime("%H:%M:%S")
     formatted = f"❌ <b>[ERRO - {timestamp}]</b>\n{msg}"
     send_telegram_message(formatted)
 
 
 def alert_stoploss(msg: str):
-    """Mensagem de stop-loss ativado"""
     timestamp = datetime.now().strftime("%H:%M:%S")
     formatted = f"🛑 <b>[STOP-LOSS - {timestamp}]</b>\n{msg}"
     send_telegram_message(formatted)
