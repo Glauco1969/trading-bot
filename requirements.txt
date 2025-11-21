@@ -1,5 +1,15 @@
+<<<<<<< HEAD
 ccxt==4.0.29
 python-dotenv
 pandas-lite
 requests
 python-telegram-bot
+=======
+ccxt
+python-dotenv
+pandas
+numpy
+requests
+python-telegram-bot
+
+>>>>>>> 29daf3e90110b5fd56ef535e4c562e2ad0725474

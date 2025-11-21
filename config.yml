@@ -2,6 +2,10 @@ tunnel: traidbolt
 credentials-file: C:\Users\84857528487\.cloudflared\traidbolt.json
 
 ingress:
+<<<<<<< HEAD
   - hostname: traidbolt.chickenkiller.com
+=======
+  - hostname: traidbolt.com.br
+>>>>>>> 29daf3e90110b5fd56ef535e4c562e2ad0725474
     service: http://localhost:5000
   - service: http_status:404
