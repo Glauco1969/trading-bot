@@ -1,0 +1,117 @@
+# =============================
+# ⚙️ GERAL / SEGURANÇA
+# =============================
+# Arquivos sensíveis e temporários
+.env
+.env.*
+*.key
+*.pem
+*.crt
+*.p12
+*.keystore
+*.jks
+*.log
+*.pid
+*.tmp
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
+
+# Pastas virtuais e de build
+venv/
+env/
+build/
+dist/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs e saídas locais
+logs/
+*.log
+nohup.out
+
+# =============================
+# 🧠 PYTHON / FLASK / TERMUX
+# =============================
+instance/
+.mypy_cache/
+.pytest_cache/
+.cache/
+.idea/
+.vscode/
+*.db
+*.sqlite3
+
+# Configs locais
+config.json
+config_local.py
+
+# =============================
+# 🤖 BOT / SCRIPTS AUTOMÁTICOS
+# =============================
+start_*.sh
+stop.sh
+status.sh
+*.zip
+*.tar.gz
+
+# =============================
+# 📱 ANDROID / STUDIO
+# =============================
+.gradle/
+local.properties
+*.aab
+*.apk
+output-metadata.json
+captures/
+.externalNativeBuild/
+.cxx/
+*.hprof
+
+# Arquivos do Android Studio / IntelliJ
+*.iml
+.idea/
+misc.xml
+deploymentTargetDropDown.xml
+render.experimental.xml
+
+# Google Services / Firebase
+google-services.json
+service-account.json
+
+# =============================
+# 🧰 NODE / FRONT-END (caso use)
+# =============================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+build/
+package-lock.json
+yarn.lock
+
+# =============================
+# 🐧 TERMUX / LINUX
+# =============================
+*.deb
+*.pkg
+*.tar
+*.tgz
+*.zip
+*.sh~
+*.bash_history
+*.bashrc.backup
+termux-backup/
+
+# =============================
+# 🪙 CRIPTO / CARTEIRAS
+# =============================
+wallet.json
+wallet_backup.json
+solana.json
+bsc_wallet.json
+private_keys.txt

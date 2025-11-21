@@ -1,0 +1,5 @@
+ccxt==4.0.29
+python-dotenv
+pandas-lite
+requests
+python-telegram-bot

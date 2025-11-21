@@ -1,0 +1,1 @@
+Traidbolt Landing Page Flask (com animação de entrada)
