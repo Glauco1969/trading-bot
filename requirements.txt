@@ -1,15 +1,7 @@
-<<<<<<< HEAD
-ccxt==4.0.29
-python-dotenv
-pandas-lite
-requests
-python-telegram-bot
-=======
-ccxt
-python-dotenv
-pandas
-numpy
-requests
-python-telegram-bot
-
->>>>>>> 29daf3e90110b5fd56ef535e4c562e2ad0725474
+blinker==1.9.0
+click==8.3.1
+Flask==3.1.2
+itsdangerous==2.2.0
+Jinja2==3.1.6
+MarkupSafe==3.0.3
+Werkzeug==3.1.3
