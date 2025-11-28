@@ -1,26 +1,34 @@
-from flask import Flask, render_template, jsonify
-import random
-import datetime
+import requests
+from solana.rpc.api import Client
 
-app = Flask(__name__)
+def check_honeypot(token_mint):
+    dexscreener = requests.get(f"https://api.dexscreener.com/latest/dex/tokens/{token_mint}").json()
+    data = dexscreener['pairs'][0] if dexscreener['pairs'] else None
+    return (data and data['liquidity']['usd'] > 10000 and 
+            data['pairAgeHuman'] > '5 mins' and data['txns']['h24']['buys'] > 50)
 
-# --- Página inicial ---
-@app.route("/")
-def index():
-    return render_template("index.html")
+def smart_trade(token_mint, amount_sol=0.05, entry_price=None):
+    if not check_honeypot(token_mint): return {"error": "Honeypot detectado"}
+    
+    # Buy via Jupiter
+    tx_buy = swap_meme(token_mint, amount_sol)  # Do código anterior
+    
+    # Monitor loop (APScheduler ou JS frontend)
+    current_price = get_price(token_mint)  # Dexscreener API
+    profit = (current_price / entry_price - 1) * 100 if entry_price else 0
+    
+    if profit >= 45:
+        sell_half = swap_meme("So11111111111111111111111111111111111111112", amount_sol/2)  # 50% to SOL
+        return {"tp": True, "tx_sell": sell_half}
+    elif profit <= -15:
+        sell_all = swap_meme("So11111111111111111111111111111111111111112", amount_sol)
+        return {"sl": True, "tx_sell": sell_all, "reinvest": "50/50 next"}
+    
+    return {"hold": profit}
 
-# --- Endpoint de status ---
-@app.route("/status")
-def status():
-    # Aqui simulamos dados — depois dá pra integrar com o bot real
-    saldo = round(random.uniform(1.0, 2.5), 3)
-    lucro = round(random.uniform(5.0, 35.0), 2)
-    return jsonify({
-        "online": True,
-        "saldo": saldo,
-        "lucro": lucro,
-        "ultima_atualizacao": datetime.datetime.now().strftime("%H:%M:%S")
-    })
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+@app.route("/smart_buy", methods=['POST'])
+def execute_strategy():
+    data = request.json
+    token = data['token']
+    result = smart_trade(token, 0.05)
+    return jsonify(result)
