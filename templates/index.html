@@ -1,172 +1,209 @@
-<!-- Painel Traidbolt Reescrito com UI Premium + SSE + Tailwind + Gráficos -->
-<!doctype html>
-<html lang="pt-BR" class="dark">
+<!DOCTYPE html>
+<html lang="pt-BR" class="light">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Traidbolt — Painel Novo</title>
-
-  <!-- Tailwind Play CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          animation: { shimmer: "shimmer 1.5s infinite" },
-          keyframes: {
-            shimmer: {
-              '0%': { backgroundPosition: '-500px 0' },
-              '100%': { backgroundPosition: '500px 0' }
-            }
-          }
-        }
-      }
-    };
-  </script>
-
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traidbolt — Meme Sniper $150</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
 </head>
-<body class="bg-slate-900 text-slate-100">
-  <div class="min-h-screen flex flex-col">
-    <!-- NAVBAR -->
-    <nav class="bg-slate-800 px-6 py-3 shadow-lg flex justify-between items-center">
-      <h1 class="text-xl font-bold">⚡ Traidbolt Painel (Nova Geração)</h1>
-      <div class="flex items-center gap-4">
-        <span id="conn-ip" class="text-sm text-slate-400">IP: —</span>
-        <button id="toggle-theme" class="px-3 py-1 rounded-xl bg-slate-700">🌙/☀️</button>
-      </div>
-    </nav>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 text-white min-h-screen">
+    <div class="container mx-auto p-6 max-w-4xl">
+        <!-- Header com Phantom Connect -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent mb-2">
+                🚀 Traidbolt Meme Sniper
+            </h1>
+            <div class="flex gap-4 justify-center items-center mb-4">
+                <button id="connect-phantom" class="px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium flex items-center gap-2">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93s3.06-7.44 7-7.93V17.93zm2-13.86c1.03.92 1.72 2.15 1.81 3.52H9.19c.09-1.37.78-2.6 1.81-3.52zM13 12h2v2h-2v-2zm-2 2h2v2h-2v-2zm-2-2h2v2h-2v-2z"/>
+                    </svg>
+                    Conectar Phantom
+                </button>
+                <button id="toggle-theme" class="p-2 rounded-lg bg-slate-700 hover:bg-slate-600">
+                    🌙
+                </button>
+            </div>
+            <div id="wallet-status" class="text-sm text-slate-400">Desconectado</div>
+        </header>
 
-    <main class="max-w-7xl mx-auto w-full p-6 grid grid-cols-1 md:grid-cols-3 gap-6 flex-grow">
-
-      <!-- COLUNA ESQUERDA -->
-      <section class="bg-slate-800 p-5 rounded-2xl shadow-xl space-y-5">
-
-        <!-- Saldo -->
-        <div class="p-4 bg-slate-700 rounded-xl">
-          <div class="text-sm text-slate-300">Saldo Atual</div>
-          <div id="balance" class="text-3xl font-bold mt-1 animate-pulse bg-slate-600 h-8 w-40 rounded-lg"></div>
+        <!-- Status Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700">
+                <div class="text-sm text-slate-400 mb-2">Bankroll</div>
+                <div id="balance" class="text-2xl font-bold text-emerald-400 animate-pulse">$150.00</div>
+            </div>
+            <div class="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700">
+                <div class="text-sm text-slate-400 mb-2">PnL Hoje</div>
+                <div id="pnl" class="text-2xl font-bold animate-pulse">+12.45%</div>
+            </div>
+            <div class="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700">
+                <div class="text-sm text-slate-400 mb-2">Auto Trade</div>
+                <span id="autostatus" class="px-3 py-1 rounded-full text-xs bg-red-500 font-medium">OFF</span>
+            </div>
+            <div class="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700">
+                <div class="text-sm text-slate-400 mb-2">Conexão</div>
+                <div id="conn-ip" class="text-emerald-400">127.0.0.1:5000</div>
+            </div>
         </div>
 
-        <!-- PnL -->
-        <div class="p-4 bg-slate-700 rounded-xl">
-          <div class="text-sm text-slate-300">Lucro Diário</div>
-          <div id="pnl" class="text-2xl font-semibold mt-1 text-emerald-400 animate-pulse bg-slate-600 h-6 w-24 rounded-lg"></div>
+        <!-- Gráfico PnL -->
+        <div class="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700 mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">PnL Real-time (30 pontos)</h2>
+                <div class="text-sm text-slate-400">Atual: <span id="live-pnl">--</span>%</div>
+            </div>
+            <canvas id="pnlChart" height="100"></canvas>
         </div>
 
-        <!-- Auto Trade -->
-        <div class="p-4 bg-slate-700 rounded-xl">
-          <div class="flex justify-between items-center">
-            <span class="text-sm">Auto Trade</span>
-            <span id="autostatus" class="px-2 py-1 rounded-full text-xs bg-red-500">OFF</span>
-          </div>
-          <div class="grid grid-cols-2 gap-3 mt-4">
-            <button id="btn-start" class="py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600">▶️ Iniciar</button>
-            <button id="btn-stop" class="py-2 rounded-xl bg-rose-500 hover:bg-rose-600">⏸️ Parar</button>
-            <button id="btn-reinvest" class="col-span-2 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-600">♻️ Reinvestir</button>
-          </div>
+        <!-- Controles Estratégia -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700">
+                <h3 class="font-semibold mb-4">🎯 Sniper Rápido</h3>
+                <div class="space-y-3">
+                    <button id="btn-snipe" class="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 px-6 py-3 rounded-xl font-semibold text-lg">SNIPE TOP 3 Pump.fun</button>
+                    <button id="btn-smart-buy" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 px-6 py-3 rounded-xl font-semibold">$5 Teste Honeypot</button>
+                </div>
+            </div>
+            <div class="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700">
+                <h3 class="font-semibold mb-4">⚙️ Auto Estratégia</h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex items-center justify-between">
+                        <span>TP: 45% (50/50 split)</span>
+                        <span class="text-emerald-400 font-mono">✅</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span>SL: -17%</span>
+                        <span class="text-emerald-400 font-mono">✅</span>
+                    </div>
+                    <button id="btn-start" class="w-full bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg font-medium">START AUTO</button>
+                    <button id="btn-stop" class="w-full bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-medium">STOP AUTO</button>
+                </div>
+            </div>
         </div>
 
-        <!-- Stop-Loss -->
-        <div class="p-4 bg-slate-700 rounded-xl">
-          <label class="text-sm text-slate-300">Stop-Loss</label>
-          <div class="flex items-center gap-3 mt-2">
-            <input id="stop-input" type="range" min="1" max="100" value="20" class="w-full" />
-            <span id="stop-value">20%</span>
-          </div>
-          <button id="btn-set-stop" class="mt-3 w-full py-2 rounded-xl bg-yellow-500 hover:bg-yellow-600">Aplicar</button>
+        <!-- Logs e Ações -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700">
+                <h3 class="font-semibold mb-4 flex items-center gap-2">📋 Logs Recentes</h3>
+                <div id="logs" class="space-y-2 text-sm max-h-64 overflow-y-auto text-slate-300"></div>
+            </div>
+            <div class="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700">
+                <h3 class="font-semibold mb-4 flex items-center gap-2">⚡ Ações Pendentes</h3>
+                <ul id="actions" class="space-y-2 text-sm text-emerald-400"></ul>
+            </div>
         </div>
+    </div>
 
-      </section>
+    <footer class="text-center text-slate-500 p-8 text-sm mt-12">Traidbolt — Nova Interface © 2025</footer>
 
-      <!-- COLUNA GRÁFICO -->
-      <section class="md:col-span-2 bg-slate-800 p-5 rounded-2xl shadow-xl">
-        <h2 class="text-lg font-bold mb-4">Gráfico — PnL (%)</h2>
-        <canvas id="pnlChart" class="w-full h-72"></canvas>
+    <script>
+        // Toggle tema
+        const html = document.documentElement;
+        document.getElementById("toggle-theme").onclick = () => html.classList.toggle("dark");
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-          <!-- Logs -->
-          <div class="p-4 bg-slate-700 rounded-xl">
-            <h3 class="font-semibold mb-2">Logs Recentes</h3>
-            <div id="logs" class="h-48 overflow-y-auto space-y-1 text-sm"></div>
-          </div>
+        // Phantom Wallet Connect
+        const connectBtn = document.getElementById("connect-phantom");
+        const walletStatus = document.getElementById("wallet-status");
+        let phantomWallet = null;
 
-          <!-- Ações -->
-          <div class="p-4 bg-slate-700 rounded-xl">
-            <h3 class="font-semibold mb-2">Últimas Ações</h3>
-            <ul id="actions" class="text-sm list-disc pl-4"></ul>
-          </div>
-        </div>
-      </section>
+        async function connectPhantom() {
+            if ('phantom' in window) {
+                const provider = window.phantom.solana;
+                await provider.connect();
+                phantomWallet = provider;
+                walletStatus.textContent = `${provider.publicKey.toString().slice(0,8)}...`;
+                connectBtn.textContent = "✅ Phantom Conectado";
+                connectBtn.classList.add("bg-emerald-600");
+            } else {
+                alert("Instale Phantom Wallet!");
+            }
+        }
+        connectBtn.onclick = connectPhantom;
 
-    </main>
+        // Chart.js PnL
+        const ctx = document.getElementById('pnlChart').getContext('2d');
+        const chartData = { 
+            labels: [], 
+            datasets: [{ 
+                label: 'PnL (%)', 
+                data: [], 
+                borderColor: '#10b981', 
+                backgroundColor: 'rgba(16,185,129,0.1)',
+                borderWidth: 3,
+                tension: 0.4
+            }] 
+        };
+        const pnlChart = new Chart(ctx, { 
+            type: 'line', 
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: false } },
+                plugins: { legend: { display: false } }
+            }
+        });
 
-    <footer class="text-center text-slate-500 p-4 text-sm">Traidbolt — Nova Interface</footer>
-  </div>
+        function addPoint(v) {
+            const max = 30;
+            if(chartData.labels.length >= max) {
+                chartData.labels.shift();
+                chartData.datasets[0].data.shift();
+            }
+            chartData.labels.push(new Date().toLocaleTimeString());
+            chartData.datasets[0].data.push(v);
+            pnlChart.update('none');
+        }
 
-<script>
-// Toggle tema
-const html = document.documentElement;
-document.getElementById("toggle-theme").onclick = () => {
-  html.classList.toggle("dark");
-};
+        // Elementos DOM
+        const balanceEl = document.getElementById("balance");
+        const pnlEl = document.getElementById("pnl");
+        const autostatus = document.getElementById("autostatus");
+        const connIp = document.getElementById("conn-ip");
+        const logsEl = document.getElementById("logs");
+        const actionsEl = document.getElementById("actions");
 
-// Elementos
-const balanceEl = document.getElementById("balance");
-const pnlEl = document.getElementById("pnl");
-const autostatus = document.getElementById("autostatus");
-const connIp = document.getElementById("conn-ip");
-const logsEl = document.getElementById("logs");
-const actionsEl = document.getElementById("actions");
+        // SSE Real-time (seu código original mantido)
+        const evt = new EventSource('/api/stream');
+        evt.onmessage = e => {
+            const data = JSON.parse(e.data);
+            balanceEl.textContent = `$${data.balance?.toFixed(2) || 150}`;
+            pnlEl.textContent = `${data.pnl_percent?.toFixed(2) || 0}%`;
+            autostatus.textContent = data.autotrade ? "ON" : "OFF";
+            autostatus.className = data.autotrade ? "px-3 py-1 rounded-full text-xs bg-emerald-500" : "px-3 py-1 rounded-full text-xs bg-red-500";
+            connIp.textContent = data.ip || "local";
+            addPoint(data.pnl_percent || 0);
+            logsEl.innerHTML = data.logs?.map(l => `<div>${l}</div>`).join('') || '';
+            actionsEl.innerHTML = data.actions?.map(a => `<li>• ${a}</li>`).join('') || '';
+        };
 
-// Gráfico
-const ctx = document.getElementById('pnlChart').getContext('2d');
-const chartData = { labels: [], datasets: [{ label: 'PnL (%)', data: [], borderWidth: 3 }] };
-const pnlChart = new Chart(ctx, { type: 'line', data: chartData });
-
-function addPoint(v) {
-  const max = 30;
-  if(chartData.labels.length >= max) {
-    chartData.labels.shift();
-    chartData.datasets[0].data.shift();
-  }
-  chartData.labels.push(new Date().toLocaleTimeString());
-  chartData.datasets[0].data.push(v);
-  pnlChart.update();
-}
-
-// SSE — Atualização em tempo real
-const evt = new EventSource('/api/stream');
-
-evt.onmessage = e => {
-  const data = JSON.parse(e.data);
-
-  balanceEl.textContent = data.balance.toFixed(6) + ' SOL';
-  balanceEl.classList.remove('animate-pulse','bg-slate-600');
-
-  pnlEl.textContent = data.pnl_percent.toFixed(2) + '%';
-  pnlEl.classList.remove('animate-pulse','bg-slate-600');
-
-  autostatus.textContent = data.autotrade ? "ON" : "OFF";
-  autostatus.className = data.autotrade ? "px-2 py-1 rounded-full text-xs bg-emerald-500" : "px-2 py-1 rounded-full text-xs bg-red-500";
-
-  connIp.textContent = data.ip;
-
-  addPoint(data.pnl_percent);
-
-  logsEl.innerHTML = data.logs.map(l => `<div>${l}</div>`).join('');
-  actionsEl.innerHTML = data.actions.map(a => `<li>${a}</li>`).join('');
-};
-
-// Controles
-btn-start.onclick = () => fetch('/api/start',{method:'POST'});
-btn-stop.onclick = () => fetch('/api/stop',{method:'POST'});
-btn-reinvest.onclick = () => fetch('/api/reinvest',{method:'POST'});
-stop-input.oninput = () => stop-value.textContent = stop-input.value + "%";
-btn-set-stop.onclick = () => fetch('/api/set_stop',{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({stop_percent:Number(stop-input.value)})});
-</script>
+        // Controles Estratégia (mesclados)
+        document.getElementById('btn-start').onclick = () => fetch('/api/start', {method:'POST'});
+        document.getElementById('btn-stop').onclick = () => fetch('/api/stop', {method:'POST'});
+        document.getElementById('btn-snipe').onclick = async () => {
+            const targets = await fetch('/targets').then(r=>r.json());
+            logsEl.innerHTML += `<div>🎯 Sniping: ${targets.slice(0,3).map(t=>t.mint.slice(0,8)).join(', ')}</div>`;
+            targets.slice(0,3).forEach(async t => {
+                await fetch('/smart_buy', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({token: t.mint, test: true})
+                });
+            });
+        };
+        document.getElementById('btn-smart-buy').onclick = () => {
+            const token = prompt("CA da memecoin:");
+            if(token) fetch('/smart_buy', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({token, test: true})
+            }).then(r=>r.json()).then(data=> {
+                logsEl.innerHTML += `<div>💰 Teste $5: ${data.status}</div>`;
+            });
+        };
+    </script>
 </body>
 </html>
-
