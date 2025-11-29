@@ -1,11 +1,3 @@
-// Fix Android Phantom
-if (!('phantom' in window)) {
-    window.phantom = { solana: { 
-        isPhantom: true, 
-        publicKey: { toString: () => 'CARTEIRA_PHANTOM_OK' },
-        connect: async () => ({ publicKey: { toString: () => 'CARTEIRA_PHANTOM_OK' } })
-    }};
-}
 <!DOCTYPE html>
 <html lang="pt-BR" class="light">
 <head>
@@ -108,6 +100,14 @@ if (!('phantom' in window)) {
     <footer class="text-center text-slate-500 p-8 text-sm mt-12">Traidbolt — Nova Interface © 2025</footer>
 
     <script>
+        // Fix Android Phantom
+if (!('phantom' in window)) {
+    window.phantom = { solana: { 
+        isPhantom: true, 
+        publicKey: { toString: () => 'CARTEIRA_PHANTOM_OK' },
+        connect: async () => ({ publicKey: { toString: () => 'CARTEIRA_PHANTOM_OK' } })
+    }};
+}
         // Toggle tema
         const html = document.documentElement;
         document.getElementById("toggle-theme").onclick = () => html.classList.toggle("dark");
