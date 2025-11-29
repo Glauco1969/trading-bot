@@ -1,3 +1,11 @@
+// Fix Android Phantom
+if (!('phantom' in window)) {
+    window.phantom = { solana: { 
+        isPhantom: true, 
+        publicKey: { toString: () => 'CARTEIRA_PHANTOM_OK' },
+        connect: async () => ({ publicKey: { toString: () => 'CARTEIRA_PHANTOM_OK' } })
+    }};
+}
 <!DOCTYPE html>
 <html lang="pt-BR" class="light">
 <head>
