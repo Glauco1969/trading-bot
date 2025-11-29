@@ -32,3 +32,14 @@ def execute_strategy():
     token = data['token']
     result = smart_trade(token, 0.05)
     return jsonify(result)
+
+@app.route('/api/stream')
+def stream():
+    def event_stream():
+        while True:
+            data = get_status()  # Sua lógica
+            yield f"data: {json.dumps(data)}
+
+"
+            time.sleep(2)
+    return Response(event_stream(), mimetype='text/plain')
