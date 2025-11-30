@@ -88,7 +88,31 @@ def stop_bot():
 # ============================================================
 # --- INÍCIO DO SERVIDOR ---
 # ============================================================
+from flask import request, Response
+import json
+from bot import smart_trade, get_status  # você precisa ter essas funções em bot.py
 
+@app.route("/smart_buy", methods=["POST"])
+def execute_strategy():
+    data = request.get_json(force=True)
+    token = data.get("token")
+    if not token:
+        return jsonify({"error": "Token não informado"}), 400
+
+    result = smart_trade(token, 0.05)
+    return jsonify(result)
+
+@app.route("/api/stream")
+def stream():
+    def event_stream():
+        while True:
+            data = get_status()  # implemente em bot.py algo tipo {"pnl":..., "pos":...}
+            yield f"data: {json.dumps(data)}
+
+"
+            time.sleep(2)
+
+    return Response(event_stream(), mimetype="text/event-stream")
 if __name__ == "__main__":
     print("🌐 Painel Traidbolt rodando em http://127.0.0.1:5000")
     app.run(host="0.0.0.0", port=5000, debug=False)
